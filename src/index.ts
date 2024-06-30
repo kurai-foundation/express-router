@@ -1,7 +1,11 @@
 import RouterBuilder from "./router-builder"
-import { routerUtils } from "./router-utils"
+import { ISchema, routerUtils } from "./router-utils"
+import { ParsedQs, RequestMethods } from "./requests/router-requests-core"
 
 export {
   RouterBuilder,
-  routerUtils
+  routerUtils,
+  type ISchema,
+  type ParsedQs,
+  type RequestMethods
 }

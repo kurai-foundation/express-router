@@ -1,16 +1,16 @@
-import { Request, Router } from "express"
+import { Router } from "express"
 import Joi from "joi"
-import { ISchema, routerUtils } from "./router-utils"
-import { RouteParameters } from "express-serve-static-core"
+import { ISchema } from "./router-utils"
+import RouterRequestsWithoutSchema from "./requests/router-requests-without-schema"
+import RouterRequestsWithSchema from "./requests/router-requests-with-schema"
 
-export default class RouterBuilder {
-  private readonly _router: Router
-
+export default class RouterBuilder extends RouterRequestsWithoutSchema {
   constructor() {
-    this._router = Router()
+    const router = Router()
+    super(router)
   }
 
-  public router() {
+  public get router() {
     return this._router
   }
 
@@ -20,35 +20,7 @@ export default class RouterBuilder {
     }
   }
 
-  public post<Body = any, Route extends string = any>(
-    path: Route,
-    schema: ISchema,
-    callback: (req: Request<RouteParameters<Route>, any, Body>) => Promise<any>
-  ) {
-    this._router.post(path, async (req, res) => {
-      await routerUtils(res, req)
-        .schema(schema)
-        .errorBoundary(async self => {
-          const result = await callback(req)
-
-          self.sendJSON(result)
-        })
-    })
-  }
-
-  public get<Route extends string = any>(
-    path: Route,
-    schema: ISchema | null,
-    callback: (req: Request<RouteParameters<Route>>) => Promise<any>
-  ) {
-    this._router.get(path, async (req, res) => {
-      await routerUtils(res, req)
-        .schema(schema)
-        .errorBoundary(async self => {
-          const result = await callback(req)
-
-          self.sendJSON(result)
-        })
-    })
+  public schema(schema: ISchema) {
+    return new RouterRequestsWithSchema(this._router, schema)
   }
 }
