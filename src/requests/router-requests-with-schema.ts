@@ -3,7 +3,7 @@ import { ISchema } from "../router-utils"
 import { ParsedQs, ReqCallback, RouterRequestsCore } from "./router-requests-core"
 
 export default class RouterRequestsWithSchema extends RouterRequestsCore {
-  constructor(protected readonly _router: Router, private readonly schema: ISchema) {
+  constructor(protected readonly _router: Router, private readonly schema: ISchema | null) {
     super(_router)
   }
 

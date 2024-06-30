@@ -20,7 +20,7 @@ export default class RouterBuilder extends RouterRequestsWithoutSchema {
     }
   }
 
-  public schema(schema: ISchema) {
+  public schema(schema: ISchema | null) {
     return new RouterRequestsWithSchema(this._router, schema)
   }
 }

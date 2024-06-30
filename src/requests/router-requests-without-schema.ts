@@ -9,7 +9,7 @@ export default class RouterRequestsWithoutSchema extends RouterRequestsCore {
 
   public post<Body = any, Query extends ParsedQs = any, Route extends string = any>(
     path: Route,
-    schema: ISchema,
+    schema: ISchema | null,
     callback: ReqCallback<Body, Query, Route>
   ) {
     this.request("post", path, schema, callback)
@@ -17,7 +17,7 @@ export default class RouterRequestsWithoutSchema extends RouterRequestsCore {
 
   public put<Body = any, Query extends ParsedQs = any, Route extends string = any>(
     path: Route,
-    schema: ISchema,
+    schema: ISchema | null,
     callback: ReqCallback<Body, Query, Route>
   ) {
     this.request("put", path, schema, callback)
@@ -25,7 +25,7 @@ export default class RouterRequestsWithoutSchema extends RouterRequestsCore {
 
   public patch<Body = any, Query extends ParsedQs = any, Route extends string = any>(
     path: Route,
-    schema: ISchema,
+    schema: ISchema | null,
     callback: ReqCallback<Body, Query, Route>
   ) {
     this.request("patch", path, schema, callback)
