@@ -1,6 +1,6 @@
 {
   "name": "@kurai-io/express-router",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "Simple requests router based on the express framework",
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
