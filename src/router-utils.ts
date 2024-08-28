@@ -75,7 +75,9 @@ export function routerUtils<Res extends Response, Req extends Request>(res: Res,
         if (error?.name === "Error") Logger?.error((error?.name ?? "UnknownError") + ": " + (error?.message ?? "No details"))
         this.sendJSONRaw({
           error: error?.name ?? "UnknownError",
-          content: error?.message ?? null
+          content: {
+            message: error?.message ?? "Error occurred"
+          }
         }, error.code || 500)
       }
 
