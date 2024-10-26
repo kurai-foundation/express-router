@@ -2,22 +2,22 @@ name: Build, Publish and Release NPM Package
 
 on:
   push:
-    branches:
-      - main
+    tags:
+      - 'v*'  # Trigger on any tag starting with 'v'
 
 jobs:
-  build-and-publish:
+  # Build Job
+  build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v3
         with:
           node-version: '18'
-          registry-url: 'https://registry.npmjs.org/'
 
       - name: Install Dependencies
         run: npm install
@@ -25,37 +25,47 @@ jobs:
       - name: Build
         run: tsc
 
-      - name: Auto Increment Version
+      - name: Save Build Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-artifacts
+          path: |
+            ./dist
+            ./LICENSE
+            ./README.md
+            ./package.json
+
+  # Publish Job
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          registry-url: 'https://registry.npmjs.org/'
+
+      - name: Download Build Artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: build-artifacts
+
+      - name: Extract Version from Tag
         id: version
         run: |
-          git config user.name github-actions
-          git config user.email github-actions@github.com
-          VERSION=$(npm version patch --force -m "Upgrade to %s due to changes")
-          echo "::set-output name=tag::$VERSION"
+          VERSION=${GITHUB_REF#refs/tags/}
+          echo "::set-output name=version::$VERSION"
           echo "VERSION=$VERSION" >> $GITHUB_ENV
 
-      - name: Push Changes
+      - name: Update package.json with Tag Version
         run: |
-          git push origin HEAD:main
-          git push origin HEAD:main --tags
-
-      - name: Generate Release Notes
-        id: release_notes
-        run: |
-          echo "Release Notes:" > release_notes.md
-          git log $(git describe --tags --abbrev=0)..HEAD --pretty=format:"%h %s" >> release_notes.md
-          echo "::set-output name=notes::$(cat release_notes.md)"
-
-      - name: Create Release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ steps.version.outputs.tag }}
-          release_name: Release ${{ steps.version.outputs.tag }}
-          draft: false
-          prerelease: false
-          body: ${{ steps.release_notes.outputs.notes }}
+          echo "Updating package.json with version $VERSION"
+          npm version --no-git-tag-version $VERSION
 
       - name: Publish to NPM
         run: npm publish
