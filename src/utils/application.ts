@@ -1,7 +1,14 @@
 import express, { Express } from "express"
-import RouterBuilder, { IRouterBuilderConfig } from "./router-builder"
-import { IBodyLessSchema, ISchema, TLogger } from "./router-utils"
-import { RouterContentRequestsWithSchema, RouterRequestsWithSchema } from "../requests/router-requests-with-schema"
+import RouterBuilder from "./router-builder"
+import { TLogger } from "./router-utils"
+import {
+  ICreateRouteOptions,
+  ISwaggerTransformerOptions,
+  TCreateRouteResponse,
+  TCreateRouteSchema,
+  TRegisteredBuilder
+} from "../types"
+import getModule from "./get-module"
 
 export interface IApplicationConfig {
   /**
@@ -39,14 +46,6 @@ export interface IApplicationConfig {
   port?: number
 
   /**
-   * If true, a root GET route will be automatically
-   * added to the application, which will return 200 OK on any requests
-   *
-   * @default false
-   */
-  setDefaultRoute?: boolean
-
-  /**
    * A callback that will be called just before the application
    * is launched for additional configuration
    *
@@ -63,36 +62,28 @@ export interface IApplicationConfig {
    * @param app express application itself
    */
   onAppStart?: (host: string, port: number, app: Express) => void | null
+
+  /**
+   * If true, a root GET route will be automatically
+   * added to the application, which will return Swagger UI
+   *
+   * If `swagger-ui-express` or `@kurai-io/express-router-swagger` are not installed,
+   * then the default route with `200 OK` response will be served instead
+   *
+   * @default false
+   */
+  enableSwagger?: boolean
+
+  /**
+   * Optional swagger configuration
+   */
+  swagger?: Omit<ISwaggerTransformerOptions, "builders">
 }
-
-// Schema definition in configuration
-export type TCreateRouteSchema = ISchema | IBodyLessSchema | undefined | null
-
-/**
- * Route creation method options
- */
-export interface ICreateRouteOptions<S extends TCreateRouteSchema, T extends Record<any, any> = {}> extends Omit<IRouterBuilderConfig<T>, "logger"> {
-  /** The root path of the route, use "/" to use without an additional path */
-  root: string
-
-  /** Top-level route schema */
-  schema?: S
-}
-
-// Create a route response based on schema
-export type TCreateRouteResponse<
-  S extends TCreateRouteSchema = undefined,
-  T extends Record<any, any> = {}
-> = S extends ISchema | IBodyLessSchema
-  ? (
-    S extends IBodyLessSchema
-      ? RouterRequestsWithSchema<T>
-      : RouterContentRequestsWithSchema<T>
-    )
-  : (S extends null ? RouterRequestsWithSchema<T> : RouterBuilder<T>)
 
 export default class Application {
   private readonly internalApp: Express
+
+  private registeredBuilders: TRegisteredBuilder[] = []
 
   /**
    * Layer-2 framework based on express
@@ -103,12 +94,10 @@ export default class Application {
     const app = express()
 
     // Setup cors if possible
-    try {
-      const cors = require("cors")
-      app.use(cors())
-    } catch {
-      (config?.logger?.warning || config?.logger?.error)?.("Running the application without CORS. Install the CORS package to automatically enable it")
-    }
+    const cors = getModule("cors")
+
+    if (cors) app.use(cors)
+    else (config?.logger?.warning || config?.logger?.error)?.("Running the application without CORS. Install the CORS package to automatically enable it")
 
     // Setup JSON middleware
     if (!config || config.json) {
@@ -121,12 +110,6 @@ export default class Application {
     const port = config?.port || (process.env.APP_PORT ? parseInt(process.env.APP_PORT, 10) : undefined) || 3000
     const host = config?.host || process.env.APP_HOST || "127.0.0.1"
 
-    if (config?.setDefaultRoute) {
-      app.get("/", (_, res) => {
-        res.status(200).send("OK")
-      })
-    }
-
     app.listen(port, host, () => {
       if (config?.onAppStart) {
         config.onAppStart(host, port, app)
@@ -134,6 +117,31 @@ export default class Application {
       }
 
       if (config?.onAppStart !== null) config?.logger?.info(`Application running on host ${ host } and port ${ port }`)
+    })
+
+    // Generate swagger only after setup
+    setTimeout(() => {
+      if (!config?.enableSwagger) return
+
+      const swaggerModule = getModule<{
+        swaggerTransformer: (options: ISwaggerTransformerOptions) => any
+      }>("@kurai-io/express-router-swagger")
+
+      const swaggerUi = getModule("swagger-ui-express")
+
+      if (swaggerUi && swaggerModule?.swaggerTransformer) {
+        app.use("/", swaggerUi.serve, swaggerUi.setup(swaggerModule.swaggerTransformer({
+          ...this.config?.swagger ?? {},
+          builders: this.registeredBuilders
+        })))
+
+        return
+      }
+
+      (config?.logger?.warning || config?.logger?.error)?.("Swagger module or swagger-ui-express not installed, setting up default GET path instead")
+      app.get("/", (_, res) => {
+        res.status(200).send("OK")
+      })
     })
 
     this.internalApp = app
@@ -153,6 +161,10 @@ export default class Application {
       ...builderConfig,
       logger: this.config?.logger
     })
+
+    if (!this.registeredBuilders.some(b => b.builder.symbol === builder.symbol)) {
+      this.registeredBuilders.push({ builder, path: root })
+    }
 
     const router = schema !== undefined ? builder.schema(schema) : builder
 

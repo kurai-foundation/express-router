@@ -6,13 +6,26 @@ import {
   RouterContentRequestsWithSchema,
   RouterRequestsWithSchema
 } from "../requests/router-requests-with-schema"
+import { RequestMethods, RouteMetadata } from "../requests/router-requests-core"
+import { TCreateRouteSchema } from "../types"
+import { InternalServerError } from "../exceptions"
 
 export interface IRouterBuilderConfig<T> {
   middleware?: (request: Request) => T
   logger?: TLogger
 }
 
+export interface IRegisteredRoute {
+  path: string
+  method: RequestMethods
+  metadata: RouteMetadata | null
+  schema?: ISchema | null
+}
+
 export default class RouterBuilder<T extends Record<any, any> = {}> extends RouterRequestsWithoutSchema<T> {
+  protected registeredRoutes: IRegisteredRoute[] = []
+  public readonly symbol = Symbol()
+
   constructor(private readonly config?: IRouterBuilderConfig<T>) {
     const router = Router()
 
@@ -27,24 +40,84 @@ export default class RouterBuilder<T extends Record<any, any> = {}> extends Rout
     }
 
     super(router, config?.logger)
+
+    this.registerRouteImpl = this.registerRouteImpl.bind(this)
+    super.setupRouteRegisterCallback(this.registerRouteImpl)
   }
 
+  /**
+   * Implementation of a route registration method
+   * @param path route path
+   * @param method request method
+   * @param metadata
+   * @param schema validation schema
+   *
+   * @protected
+   * @internal
+   */
+  protected registerRouteImpl(path: string, method: RequestMethods, metadata: RouteMetadata | null, schema?: ISchema | null) {
+    const routeRegistered = this.registeredRoutes
+      .findIndex(route => route.path.toLowerCase() === path.toLowerCase() && route.method === method)
+
+    if (routeRegistered !== -1) {
+      this.registeredRoutes[routeRegistered] = { path, method, metadata, schema }
+    } else {
+      this.registeredRoutes.push({ path, method, metadata, schema })
+    }
+  }
+
+  /**
+   * Express router
+   */
   public get router() {
     return this._router
   }
 
+  /**
+   * @deprecated
+   *
+   * Generate schema from source
+   *
+   * @param target target validation unit
+   * @param content schema
+   */
   public generateSchema(target: "body" | "params" | "query", content: { [key: string]: any }): ISchema {
     return {
       [target]: Joi.object(content)
     }
   }
 
-  public schema(schema: IBodyLessSchema | null): RouterRequestsWithSchema<T>
-  public schema(schema: ISchema | null): RouterContentRequestsWithSchema<T>
+  /**
+   * Predefine a schema for the following handlers
+   *
+   * @param schema JOI schema
+   */
+  public schema<S extends TCreateRouteSchema>(schema: S): S extends IBodyLessSchema ? RouterRequestsWithSchema<T> : RouterContentRequestsWithSchema<T> {
+    let router: RouterContentRequestsWithSchema<T> | RouterRequestsWithSchema<T>
 
-  public schema(schema: ISchema | IBodyLessSchema | null): RouterContentRequestsWithSchema<T> | RouterRequestsWithSchema<T> {
-    if (schema && "body" in schema) return new RouterContentRequestsWithSchema<T>(this._router, schema, this.config?.logger)
+    if (schema && "body" in schema) router = new RouterContentRequestsWithSchema<T>(this._router, schema, this.config?.logger)
+    else router = new RouterRequestsWithSchema<T>(this._router, schema as any, this.config?.logger)
 
-    return new RouterRequestsWithSchema<T>(this._router, schema, this.config?.logger)
+    router.setupRouteRegisterCallback(this.registerRouteImpl)
+    return router as any
+  }
+
+  /**
+   * List registered routes for swagger transformer
+   *
+   * @internal
+   */
+  public getRegisteredRoutes() {
+    return this.registeredRoutes.map(route => {
+      return {
+        ...route,
+        metadata: {
+          ...route.metadata,
+          responses: route.metadata?.responses?.some(e => new e().code === 500)
+            ? route.metadata?.responses
+            : [...route.metadata?.responses ?? [], InternalServerError]
+        }
+      }
+    })
   }
 }

@@ -30,7 +30,7 @@ export default class RouterRequestsWithoutSchema<Attachments extends Record<any,
     schema: ISchema | null,
     callback: ReqCallback<Body, Query, Route, Attachments>
   ) {
-    this.request("post", path, schema, callback)
+    return this.request("post", path, schema, callback)
   }
 
   /**
@@ -49,7 +49,7 @@ export default class RouterRequestsWithoutSchema<Attachments extends Record<any,
     schema: ISchema | null,
     callback: ReqCallback<Body, Query, Route, Attachments>
   ) {
-    this.request("put", path, schema, callback)
+    return this.request("put", path, schema, callback)
   }
 
   /**
@@ -66,7 +66,7 @@ export default class RouterRequestsWithoutSchema<Attachments extends Record<any,
     schema: ISchema | null,
     callback: ReqCallback<Body, Query, Route, Attachments>
   ) {
-    this.request("patch", path, schema, callback)
+    return this.request("patch", path, schema, callback)
   }
 
   /**
@@ -83,7 +83,7 @@ export default class RouterRequestsWithoutSchema<Attachments extends Record<any,
     schema: ISchema | null,
     callback: ReqCallback<Body, Query, Route, Attachments>
   ) {
-    this.request("delete", path, schema, callback)
+    return this.request("delete", path, schema, callback)
   }
 
   /**
@@ -101,7 +101,7 @@ export default class RouterRequestsWithoutSchema<Attachments extends Record<any,
     schema: Omit<ISchema, "body"> | null,
     callback: ReqCallback<Body, Query, Route, Attachments>
   ) {
-    this.request("options", path, schema, callback)
+    return this.request("options", path, schema, callback)
   }
 
   /**
@@ -120,7 +120,7 @@ export default class RouterRequestsWithoutSchema<Attachments extends Record<any,
     schema: Omit<ISchema, "body"> | null,
     callback: ReqCallback<Body, Query, Route, Attachments>
   ) {
-    this.request("head", path, schema, callback)
+    return this.request("head", path, schema, callback)
   }
 
   /**
@@ -138,6 +138,6 @@ export default class RouterRequestsWithoutSchema<Attachments extends Record<any,
     schema: Omit<ISchema, "body"> | null,
     callback: ReqCallback<Body, Query, Route, Attachments>
   ) {
-    this.request("get", path, schema, callback)
+    return this.request("get", path, schema, callback)
   }
 }

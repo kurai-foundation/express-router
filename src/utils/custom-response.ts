@@ -12,3 +12,14 @@ export default class CustomResponse {
     this.code = options.content
   }
 }
+
+export function ResponseFactory(code = 200, content: any = null): new () => CustomResponse {
+  return class extends CustomResponse {
+    public readonly code = code
+    public readonly content = content
+
+    constructor() {
+      super({ code, content })
+    }
+  }
+}

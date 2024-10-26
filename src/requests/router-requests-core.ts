@@ -5,6 +5,7 @@ import Exception from "../utils/exception"
 import CustomResponse from "../utils/custom-response"
 
 export type RequestMethods = "get" | "post" | "put" | "delete" | "options" | "patch" | "head"
+
 export interface ParsedQs {
   [key: string]: undefined | string | string[] | ParsedQs | ParsedQs[]
 }
@@ -13,11 +14,24 @@ export type ReqCallback<ReqBody = any, Query extends ParsedQs = any, Route exten
   req: Request<RouteParameters<Route>, any, ReqBody, Query> & Attachments
 ) => Promise<any> | any
 
+export interface RouteMetadata {
+  responses?: ((new () => Exception) | (new () => CustomResponse))[]
+  description?: string
+}
+
+export type TRegisterRouteCallback = (path: string, method: RequestMethods, metadata: RouteMetadata | null, schema?: ISchema | null) => any
+
 /**
  * @internal
  */
 export class RouterRequestsCore<Attachments extends Record<any, any> = {}> {
+  protected registerRoute: TRegisterRouteCallback | null = null
+
   constructor(protected readonly _router: Router, private readonly logger?: TLogger) {
+  }
+
+  public setupRouteRegisterCallback(registerRoute: TRegisterRouteCallback) {
+    this.registerRoute = registerRoute
   }
 
   /**
@@ -50,5 +64,13 @@ export class RouterRequestsCore<Attachments extends Record<any, any> = {}> {
           self.sendJSON(result)
         })
     })
+
+    this.registerRoute?.(path, method, null, schema)
+
+    return {
+      metadata: (metadata: RouteMetadata) => {
+        this.registerRoute?.(path, method, metadata, schema)
+      }
+    }
   }
 }

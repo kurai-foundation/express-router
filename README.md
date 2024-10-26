@@ -8,6 +8,7 @@ build fault-tolerant backend applications
 - [Installation](#installation)
 - [Basic usage](#basic-usage)
   - [Usage example](#usage-example)
+  - [Swagger documentation](#swagger-documentation)
 - [Advanced API](#advanced-api)
 - - [Router builder](#router-builder)
   - [Routes with JOI schemas](#routes-with-joi-schemas)
@@ -141,6 +142,45 @@ builder.schema(null).head("/:id", async request => {
 Here we have created a simple and fail-safe application that knows how to validate, create and find users. 
 It's not hard, right?
 
+### Swagger documentation
+
+To enable Swagger documentation, the following packages must be installed:
+- `@kurai-io/express-router-swagger` - Swagger transformer
+- `swagger-ui-express` - Swagger UI renderer
+
+Then, in the application configuration, enable integration
+
+```typescript
+const app = new Application({
+  enableSwagger: true
+})
+```
+
+Optionally, you can customize the display of documentation
+using the `swagger` field in the configuration
+
+The documentation will be generated automatically from schemes and 
+registered routes, the names will be set to automatically generated strings.
+
+If desired, the route can be set the exception list and name manually, 
+let's take the code from the last section as an example. 
+We know that this handler can return a 404 error and a 204 response, 
+let's set the metadata to reflect this
+
+```typescript
+import { ResponseFactory } from "@kurai-io/express-router"
+
+builder.schema(null).head("/:id", async request => {
+  // ... see previous examle
+}).metadata({
+  responses: [ResponseFactory(204), NotFound],
+  description: "Get user by ID"
+})
+```
+
+_The `500 Internal server error` and the `200 Success response` are added automatically._
+
+_The `200 Success response` will not be added if other `1xx - 3xx` responses have been added._
 
 ## Advanced API
 

@@ -29,7 +29,7 @@ export class RouterContentRequestsWithSchema<Attachments extends Record<any, any
     path: Route,
     callback: ReqCallback<Body, Query, Route, Attachments>
   ) {
-    this.request("post", path, this.schema, callback)
+    return this.request("post", path, this.schema, callback)
   }
 
   /**
@@ -46,7 +46,7 @@ export class RouterContentRequestsWithSchema<Attachments extends Record<any, any
     path: Route,
     callback: ReqCallback<Body, Query, Route, Attachments>
   ) {
-    this.request("put", path, this.schema, callback)
+    return this.request("put", path, this.schema, callback)
   }
 
   /**
@@ -61,7 +61,7 @@ export class RouterContentRequestsWithSchema<Attachments extends Record<any, any
     path: Route,
     callback: ReqCallback<Body, Query, Route, Attachments>
   ) {
-    this.request("patch", path, this.schema, callback)
+    return this.request("patch", path, this.schema, callback)
   }
 
   /**
@@ -76,7 +76,7 @@ export class RouterContentRequestsWithSchema<Attachments extends Record<any, any
     path: Route,
     callback: ReqCallback<Body, Query, Route, Attachments>
   ) {
-    this.request("delete", path, this.schema, callback)
+    return this.request("delete", path, this.schema, callback)
   }
 }
 
@@ -112,7 +112,7 @@ export class RouterRequestsWithSchema<Attachments extends Record<any, any> = {}>
     path: Route,
     callback: ReqCallback<Body, Query, Route, Attachments>
   ) {
-    this.request("get", path, this.schema, callback)
+    return this.request("get", path, this.schema, callback)
   }
 
   /**
@@ -128,7 +128,7 @@ export class RouterRequestsWithSchema<Attachments extends Record<any, any> = {}>
     path: Route,
     callback: ReqCallback<Body, Query, Route, Attachments>
   ) {
-    this.request("options", path, this.schema, callback)
+    return this.request("options", path, this.schema, callback)
   }
 
   /**
@@ -145,6 +145,6 @@ export class RouterRequestsWithSchema<Attachments extends Record<any, any> = {}>
     path: Route,
     callback: ReqCallback<Body, Query, Route, Attachments>
   ) {
-    this.request("head", path, this.schema, callback)
+    return this.request("head", path, this.schema, callback)
   }
 }
