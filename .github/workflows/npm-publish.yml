@@ -64,24 +64,6 @@ jobs:
           echo "Updating package.json with version $VERSION"
           npm version --no-git-tag-version $VERSION
 
-      - name: Generate Release Notes
-        id: release_notes
-        run: |
-          echo "Release Notes:" > release_notes.md
-          git log $(git describe --tags --abbrev=0)..HEAD --pretty=format:"%h %s" >> release_notes.md
-          echo "notes=$(cat release_notes.md)" >> $GITHUB_ENV
-
-      - name: Create Release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ env.VERSION }}
-          release_name: Release ${{ env.VERSION }}
-          draft: false
-          prerelease: false
-          body: ${{ env.notes }}
-
       - name: Publish to NPM
         run: npm publish
         env:
