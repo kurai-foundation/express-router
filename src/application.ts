@@ -1,14 +1,14 @@
 import express, { Express } from "express"
-import RouterBuilder from "./router-builder"
-import { TLogger } from "./router-utils"
+import RouterBuilder from "./utils/routing/router-builder"
+import { TLogger } from "./utils/routing/router-utils"
 import {
   ICreateRouteOptions,
   ISwaggerTransformerOptions,
   TCreateRouteResponse,
-  TCreateRouteSchema,
-  TRegisteredBuilder
-} from "../types"
-import getModule from "./get-module"
+  TCreateRouteSchema
+} from "./types"
+import getModule from "./utils/get-module"
+import { Server } from "node:http"
 
 export interface IApplicationConfig {
   /**
@@ -77,13 +77,21 @@ export interface IApplicationConfig {
   /**
    * Optional swagger configuration
    */
-  swagger?: Omit<ISwaggerTransformerOptions, "builders">
+  swagger?: Omit<ISwaggerTransformerOptions, "builders"> & {
+    /**
+     * Swagger UI serve path
+     *
+     * @default root
+     * */
+    path?: string
+  }
 }
 
 export default class Application {
   private readonly internalApp: Express
+  private readonly internalServer: Server
 
-  private registeredBuilders: TRegisteredBuilder[] = []
+  private registeredBuilders: RouterBuilder[] = []
 
   /**
    * Layer-2 framework based on express
@@ -110,7 +118,7 @@ export default class Application {
     const port = config?.port || (process.env.APP_PORT ? parseInt(process.env.APP_PORT, 10) : undefined) || 3000
     const host = config?.host || process.env.APP_HOST || "127.0.0.1"
 
-    app.listen(port, host, () => {
+    this.internalServer = app.listen(port, host, () => {
       if (config?.onAppStart) {
         config.onAppStart(host, port, app)
         return
@@ -130,7 +138,7 @@ export default class Application {
       const swaggerUi = getModule("swagger-ui-express")
 
       if (swaggerUi && swaggerModule?.swaggerTransformer) {
-        app.use("/", swaggerUi.serve, swaggerUi.setup(swaggerModule.swaggerTransformer({
+        app.use(this.config?.swagger?.path || "/", swaggerUi.serve, swaggerUi.setup(swaggerModule.swaggerTransformer({
           ...this.config?.swagger ?? {},
           builders: this.registeredBuilders
         })))
@@ -157,12 +165,12 @@ export default class Application {
   ): TCreateRouteResponse<S, T> {
     const { root, schema, ...builderConfig } = options
 
-    const builder = new RouterBuilder<T>({
+    const builder = new RouterBuilder<T>(root, {
       ...builderConfig,
-      logger: this.config?.logger
-    })
+      logger: this.config?.logger,
+    }, this)
 
-    this.injectBuilder(root, builder)
+    this.injectBuilder(builder)
 
     const router = schema !== undefined ? builder.schema(schema) : builder
 
@@ -172,15 +180,16 @@ export default class Application {
   /**
    * Inject existing route builder into application
    *
-   * @param root route builder root
    * @param builder route builder instance
    */
-  public injectBuilder(root: string, builder: RouterBuilder) {
-    if (!this.registeredBuilders.some(b => b.builder.symbol === builder.symbol)) {
-      this.registeredBuilders.push({ builder, path: root })
+  public injectBuilder(builder: RouterBuilder) {
+    if (!this.registeredBuilders.some(b => b.symbol === builder.symbol)) {
+      this.registeredBuilders.push(builder)
     }
 
-    this.internalApp.use(root, builder.router)
+    if (this.config?.logger) builder.attachLogger(this.config?.logger)
+
+    this.internalApp.use(builder.root, builder.router)
   }
 
   /**
@@ -188,5 +197,9 @@ export default class Application {
    */
   public get express() {
     return this.internalApp
+  }
+
+  public get httpServer() {
+    return this.internalServer
   }
 }

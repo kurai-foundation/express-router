@@ -1,5 +1,5 @@
 import { Router } from "express"
-import { ISchema, TLogger } from "../utils/router-utils"
+import { ISchema, TLogger } from "../utils/routing/router-utils"
 import { ParsedQs, ReqCallback, RouterRequestsCore } from "./router-requests-core"
 
 export class RouterContentRequestsWithSchema<Attachments extends Record<any, any> = {}> extends RouterRequestsCore<Attachments> {

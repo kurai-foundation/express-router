@@ -1,7 +1,7 @@
 import { Request, Response } from "express"
 import Joi from "joi"
-import Exception from "./exception"
-import { BadRequest } from "../exceptions"
+import Exception from "../../responses/exception"
+import { BadRequest } from "../../exceptions"
 
 /** Schema without body */
 export interface IBodyLessSchema<T extends Joi.AnySchema = Joi.AnySchema> {
@@ -56,7 +56,7 @@ export function routerUtils<Res extends Response, Req extends Request>(res: Res,
       res.status(status)
         .header("Content-Type", "application/json")
         .header("Access-Control-Allow-Origin", "*")
-        .send(JSON.stringify(content, null, 4))
+        .send(JSON.stringify(content))
         .end()
     },
 

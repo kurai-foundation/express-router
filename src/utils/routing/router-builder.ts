@@ -1,17 +1,19 @@
-import { Router, Request } from "express"
+import { Router } from "express"
 import Joi from "joi"
-import { IBodyLessSchema, ISchema, TLogger } from "./router-utils"
-import RouterRequestsWithoutSchema from "../requests/router-requests-without-schema"
+import { IBodyLessSchema, ISchema, routerUtils, TLogger } from "./router-utils"
+import RouterRequestsWithoutSchema from "../../requests/router-requests-without-schema"
 import {
   RouterContentRequestsWithSchema,
   RouterRequestsWithSchema
-} from "../requests/router-requests-with-schema"
-import { RequestMethods, RouteMetadata } from "../requests/router-requests-core"
-import { TCreateRouteSchema } from "../types"
-import { InternalServerError } from "../exceptions"
+} from "../../requests/router-requests-with-schema"
+import { RequestMethods, RouteMetadata } from "../../requests/router-requests-core"
+import { TCreateRouteSchema } from "../../types"
+import { InternalServerError } from "../../exceptions"
+import Application from "../../application"
+import { ConstructableMiddleware } from "../middleware/middleware"
 
-export interface IRouterBuilderConfig<T> {
-  middleware?: (request: Request, builder: RouterBuilder) => T
+export interface IRouterBuilderConfig<T extends Record<any, any>> {
+  middleware?: ConstructableMiddleware<T>
   logger?: TLogger
 }
 
@@ -26,20 +28,32 @@ export default class RouterBuilder<T extends Record<any, any> = {}> extends Rout
   protected registeredRoutes: IRegisteredRoute[] = []
   public readonly symbol = Symbol()
 
-  constructor(private readonly config?: IRouterBuilderConfig<T>) {
+  constructor(public readonly root: string, private config?: IRouterBuilderConfig<T>, app?: Application) {
     const router = Router()
 
+    super(router, config?.logger)
+
     if (config?.middleware) {
-      router.use((request, _, next) => {
+      const middleware = new config.middleware()
+
+      const customBuilder = middleware.onInitialize()
+      if (customBuilder && app) app.injectBuilder(customBuilder)
+
+      router.use(async (request, response, next) => {
         if (!config.middleware) return next()
 
-        Object.assign(request, config.middleware(request, this))
+        let result: any
+        await routerUtils(response, request).errorBoundary(() => {
+          result = middleware.onRequest(request, response)
+        })
+
+        if (!result) return
+
+        Object.assign(request, result)
 
         next()
       })
     }
-
-    super(router, config?.logger)
 
     this.registerRouteImpl = this.registerRouteImpl.bind(this)
     super.setupRouteRegisterCallback(this.registerRouteImpl)
@@ -92,7 +106,7 @@ export default class RouterBuilder<T extends Record<any, any> = {}> extends Rout
    *
    * @param schema JOI schema
    */
-  public schema<S extends TCreateRouteSchema>(schema: S): S extends IBodyLessSchema ? RouterRequestsWithSchema<T> : RouterContentRequestsWithSchema<T> {
+  public schema<S extends TCreateRouteSchema>(schema: S): S extends null ? RouterRequestsWithSchema<T> : (S extends IBodyLessSchema ? RouterRequestsWithSchema<T> : RouterContentRequestsWithSchema<T>) {
     let router: RouterContentRequestsWithSchema<T> | RouterRequestsWithSchema<T>
 
     if (schema && "body" in schema) router = new RouterContentRequestsWithSchema<T>(this._router, schema, this.config?.logger)
@@ -100,6 +114,18 @@ export default class RouterBuilder<T extends Record<any, any> = {}> extends Rout
 
     router.setupRouteRegisterCallback(this.registerRouteImpl)
     return router as any
+  }
+
+  /**
+   * Attach logger to the existing router builder instance
+   *
+   * @param logger compatible logger
+   */
+  public attachLogger(logger?: TLogger) {
+    this.config = {
+      logger,
+      ...this.config
+    }
   }
 
   /**

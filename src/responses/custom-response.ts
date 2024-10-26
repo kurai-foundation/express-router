@@ -9,7 +9,7 @@ export default class CustomResponse {
 
   constructor(options: ICustomResponseOptions) {
     this.code = options.code || 200
-    this.code = options.content
+    this.content = options.content
   }
 }
 

@@ -1,4 +1,4 @@
-import Exception from "./utils/exception"
+import Exception from "./responses/exception"
 
 export { Exception }
 

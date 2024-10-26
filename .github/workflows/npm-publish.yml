@@ -1,4 +1,4 @@
-name: Build, Publish and Release NPM Package
+name: Build, Test and Publish NPM Package
 
 on:
   push:
@@ -34,8 +34,32 @@ jobs:
             ./README.md
             ./package.json
 
-  publish:
+  test:
     needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Download Build Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+
+      - name: Run Tests
+        run: npm test
+
+  publish:
+    needs: [build, test]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

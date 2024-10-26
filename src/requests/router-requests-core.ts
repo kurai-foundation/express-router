@@ -1,8 +1,8 @@
 import { Request, Router } from "express"
-import { ISchema, routerUtils, TLogger } from "../utils/router-utils"
+import { ISchema, routerUtils, TLogger } from "../utils/routing/router-utils"
 import { RouteParameters } from "express-serve-static-core"
-import Exception from "../utils/exception"
-import CustomResponse from "../utils/custom-response"
+import Exception from "../responses/exception"
+import CustomResponse from "../responses/custom-response"
 
 export type RequestMethods = "get" | "post" | "put" | "delete" | "options" | "patch" | "head"
 
