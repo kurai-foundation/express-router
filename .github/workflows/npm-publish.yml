@@ -14,9 +14,9 @@ jobs:
           fetch-depth: 0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: 20
 
       - name: Install Dependencies
         run: npm install
@@ -25,7 +25,7 @@ jobs:
         run: tsc
 
       - name: Save Build Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: build-artifacts
           path: |
@@ -43,13 +43,12 @@ jobs:
           fetch-depth: 0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          registry-url: 'https://registry.npmjs.org/'
+          node-version: 20
 
       - name: Download Build Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: build-artifacts
 
@@ -59,7 +58,6 @@ jobs:
           VERSION=${GITHUB_REF#refs/tags/}
           VERSION=${VERSION#v}
           echo "VERSION=$VERSION" >> $GITHUB_ENV
-          echo "version=$VERSION" >> $GITHUB_ENV
 
       - name: Update package.json with Tag Version
         run: |
