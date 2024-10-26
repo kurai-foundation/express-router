@@ -3,10 +3,9 @@ name: Build, Publish and Release NPM Package
 on:
   push:
     tags:
-      - 'v*'  # Trigger on any tag starting with 'v'
+      - 'v*'
 
 jobs:
-  # Build Job
   build:
     runs-on: ubuntu-latest
     steps:
@@ -17,7 +16,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '18'
+          node-version: '20'
 
       - name: Install Dependencies
         run: npm install
@@ -35,7 +34,6 @@ jobs:
             ./README.md
             ./package.json
 
-  # Publish Job
   publish:
     needs: build
     runs-on: ubuntu-latest
@@ -47,7 +45,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '18'
+          node-version: '20'
           registry-url: 'https://registry.npmjs.org/'
 
       - name: Download Build Artifacts
@@ -59,8 +57,9 @@ jobs:
         id: version
         run: |
           VERSION=${GITHUB_REF#refs/tags/}
-          echo "::set-output name=version::$VERSION"
+          VERSION=${VERSION#v}
           echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "version=$VERSION" >> $GITHUB_ENV
 
       - name: Update package.json with Tag Version
         run: |
