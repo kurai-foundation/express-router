@@ -3,24 +3,32 @@ function classNameToReadable(name: string): string {
   return readableName.charAt(0).toUpperCase() + readableName.slice(1).toLowerCase()
 }
 
+interface IExceptionOptions {
+  code: number
+  name?: string
+  message?: string[] | string
+}
+
 export default class Exception extends Error {
   public readonly code: number
 
-  protected constructor(
-    code: number,
-    name?: string,
-    message?: string[] | string
-  ) {
-    super(message ? (Array.isArray(message) ? message.join(" ") : message) : (name ? classNameToReadable(name) : "There was an unknown exception"))
+  protected constructor(options: IExceptionOptions) {
+    super(
+      options.message
+        ? (Array.isArray(options.message) ? options.message.join(" ") : options.message)
+        : (options.name ? classNameToReadable(options.name) : "There was an unknown exception")
+    )
 
-    this.code = code >= 100 && code <= 599 ? code : 500
+    this.code = options.code >= 100 && options.code <= 599 ? options.code : 500
 
-    this.name = name ?? "UnknownException"
+    this.name = options.name ?? "UnknownException"
   }
 
   public static fromError(error: Error) {
-    const code = (error as any).code || 500
-
-    return new Exception(code, error.name, error.message)
+    return new Exception({
+      name: error.name,
+      code: (error as any).code || 500,
+      message: error.message
+    })
   }
 }

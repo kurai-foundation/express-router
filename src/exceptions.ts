@@ -9,7 +9,11 @@ export class BadRequest extends Exception {
    * @param message optional error message
    */
   constructor(...message: string[]) {
-    super(400, "BadRequest", ...message)
+    super({
+      code: 400,
+      name: "BadRequest",
+      message
+    })
   }
 }
 
@@ -20,7 +24,11 @@ export class Unauthorized extends Exception {
    * @param message optional error message
    */
   constructor(...message: string[]) {
-    super(401, "Unauthorized", ...message)
+    super({
+      code: 401,
+      name: "Unauthorized",
+      message
+    })
   }
 }
 
@@ -31,7 +39,11 @@ export class PaymentRequired extends Exception {
    * @param message optional error message
    */
   constructor(...message: string[]) {
-    super(402, "PaymentRequired", ...message)
+    super({
+      code: 402,
+      name: "PaymentRequired",
+      message
+    })
   }
 }
 
@@ -42,7 +54,11 @@ export class Forbidden extends Exception {
    * @param message optional error message
    */
   constructor(...message: string[]) {
-    super(403, "Forbidden", ...message)
+    super({
+      code: 403,
+      name: "Forbidden",
+      message
+    })
   }
 }
 
@@ -53,7 +69,11 @@ export class NotFound extends Exception {
    * @param message optional error message
    */
   constructor(...message: string[]) {
-    super(404, "NotFound", ...message)
+    super({
+      code: 404,
+      name: "NotFound",
+      message
+    })
   }
 }
 
@@ -64,7 +84,11 @@ export class MethodNotAllowed extends Exception {
    * @param message optional error message
    */
   constructor(...message: string[]) {
-    super(405, "MethodNotAllowed", ...message)
+    super({
+      code: 405,
+      name: "MethodNotAllowed",
+      message
+    })
   }
 }
 
@@ -75,7 +99,11 @@ export class NotAcceptable extends Exception {
    * @param message optional error message
    */
   constructor(...message: string[]) {
-    super(406, "NotAcceptable", ...message)
+    super({
+      code: 406,
+      name: "NotAcceptable",
+      message
+    })
   }
 }
 
@@ -86,7 +114,11 @@ export class ProxyAuthenticationRequired extends Exception {
    * @param message optional error message
    */
   constructor(...message: string[]) {
-    super(407, "ProxyAuthenticationRequired", ...message)
+    super({
+      code: 407,
+      name: "ProxyAuthenticationRequired",
+      message
+    })
   }
 }
 
@@ -97,7 +129,11 @@ export class RequestTimeout extends Exception {
    * @param message optional error message
    */
   constructor(...message: string[]) {
-    super(408, "RequestTimeout", ...message)
+    super({
+      code: 408,
+      name: "RequestTimeout",
+      message
+    })
   }
 }
 
@@ -108,7 +144,11 @@ export class Conflict extends Exception {
    * @param message optional error message
    */
   constructor(...message: string[]) {
-    super(409, "Conflict", ...message)
+    super({
+      code: 409,
+      name: "Conflict",
+      message
+    })
   }
 }
 
@@ -119,7 +159,11 @@ export class Gone extends Exception {
    * @param message optional error message
    */
   constructor(...message: string[]) {
-    super(410, "Gone", ...message)
+    super({
+      code: 410,
+      name: "Gone",
+      message
+    })
   }
 }
 
@@ -130,7 +174,11 @@ export class LengthRequired extends Exception {
    * @param message optional error message
    */
   constructor(...message: string[]) {
-    super(411, "LengthRequired", ...message)
+    super({
+      code: 411,
+      name: "LengthRequired",
+      message
+    })
   }
 }
 
@@ -141,7 +189,11 @@ export class PreconditionFailed extends Exception {
    * @param message optional error message
    */
   constructor(...message: string[]) {
-    super(412, "PreconditionFailed", ...message)
+    super({
+      code: 412,
+      name: "PreconditionFailed",
+      message
+    })
   }
 }
 
@@ -152,7 +204,11 @@ export class PayloadTooLarge extends Exception {
    * @param message optional error message
    */
   constructor(...message: string[]) {
-    super(413, "PayloadTooLarge", ...message)
+    super({
+      code: 413,
+      name: "PayloadTooLarge",
+      message
+    })
   }
 }
 
@@ -163,7 +219,11 @@ export class URITooLong extends Exception {
    * @param message optional error message
    */
   constructor(...message: string[]) {
-    super(414, "URITooLong", ...message)
+    super({
+      code: 414,
+      name: "URITooLong",
+      message
+    })
   }
 }
 
@@ -174,7 +234,11 @@ export class UnsupportedMediaType extends Exception {
    * @param message optional error message
    */
   constructor(...message: string[]) {
-    super(415, "UnsupportedMediaType", ...message)
+    super({
+      code: 415,
+      name: "UnsupportedMediaType",
+      message
+    })
   }
 }
 
@@ -185,7 +249,11 @@ export class RangeNotSatisfiable extends Exception {
    * @param message optional error message
    */
   constructor(...message: string[]) {
-    super(416, "RangeNotSatisfiable", ...message)
+    super({
+      code: 416,
+      name: "RangeNotSatisfiable",
+      message
+    })
   }
 }
 
@@ -196,7 +264,11 @@ export class ExpectationFailed extends Exception {
    * @param message optional error message
    */
   constructor(...message: string[]) {
-    super(417, "ExpectationFailed", ...message)
+    super({
+      code: 417,
+      name: "ExpectationFailed",
+      message
+    })
   }
 }
 
@@ -207,7 +279,11 @@ export class ImATeapot extends Exception {
    * @param message optional error message
    */
   constructor(...message: string[]) {
-    super(418, "ImATeapot", ...message)
+    super({
+      code: 418,
+      name: "ImATeapot",
+      message
+    })
   }
 }
 
@@ -218,7 +294,11 @@ export class MisdirectedRequest extends Exception {
    * @param message optional error message
    */
   constructor(...message: string[]) {
-    super(421, "MisdirectedRequest", ...message)
+    super({
+      code: 421,
+      name: "MisdirectedRequest",
+      message
+    })
   }
 }
 
@@ -229,7 +309,11 @@ export class UnprocessableEntity extends Exception {
    * @param message optional error message
    */
   constructor(...message: string[]) {
-    super(422, "UnprocessableEntity", ...message)
+    super({
+      code: 422,
+      name: "UnprocessableEntity",
+      message
+    })
   }
 }
 
@@ -240,7 +324,11 @@ export class Locked extends Exception {
    * @param message optional error message
    */
   constructor(...message: string[]) {
-    super(423, "Locked", ...message)
+    super({
+      code: 423,
+      name: "Locked",
+      message
+    })
   }
 }
 
@@ -251,7 +339,11 @@ export class FailedDependency extends Exception {
    * @param message optional error message
    */
   constructor(...message: string[]) {
-    super(424, "FailedDependency", ...message)
+    super({
+      code: 424,
+      name: "FailedDependency",
+      message
+    })
   }
 }
 
@@ -262,7 +354,11 @@ export class TooEarly extends Exception {
    * @param message optional error message
    */
   constructor(...message: string[]) {
-    super(425, "TooEarly", ...message)
+    super({
+      code: 425,
+      name: "TooEarly",
+      message
+    })
   }
 }
 
@@ -273,7 +369,11 @@ export class UpgradeRequired extends Exception {
    * @param message optional error message
    */
   constructor(...message: string[]) {
-    super(426, "UpgradeRequired", ...message)
+    super({
+      code: 426,
+      name: "UpgradeRequired",
+      message
+    })
   }
 }
 
@@ -284,7 +384,11 @@ export class PreconditionRequired extends Exception {
    * @param message optional error message
    */
   constructor(...message: string[]) {
-    super(428, "PreconditionRequired", ...message)
+    super({
+      code: 428,
+      name: "PreconditionRequired",
+      message
+    })
   }
 }
 
@@ -295,7 +399,11 @@ export class TooManyRequests extends Exception {
    * @param message optional error message
    */
   constructor(...message: string[]) {
-    super(429, "TooManyRequests", ...message)
+    super({
+      code: 429,
+      name: "TooManyRequests",
+      message
+    })
   }
 }
 
@@ -306,7 +414,11 @@ export class RequestHeaderFieldsTooLarge extends Exception {
    * @param message optional error message
    */
   constructor(...message: string[]) {
-    super(431, "RequestHeaderFieldsTooLarge", ...message)
+    super({
+      code: 431,
+      name: "RequestHeaderFieldsTooLarge",
+      message
+    })
   }
 }
 
@@ -317,7 +429,11 @@ export class UnavailableForLegalReasons extends Exception {
    * @param message optional error message
    */
   constructor(...message: string[]) {
-    super(451, "UnavailableForLegalReasons", ...message)
+    super({
+      code: 451,
+      name: "UnavailableForLegalReasons",
+      message
+    })
   }
 }
 
@@ -328,7 +444,11 @@ export class InternalServerError extends Exception {
    * @param message optional error message
    */
   constructor(...message: string[]) {
-    super(500, "InternalServerError", ...message)
+    super({
+      code: 500,
+      name: "InternalServerError",
+      message
+    })
   }
 }
 
@@ -339,7 +459,11 @@ export class NotImplemented extends Exception {
    * @param message optional error message
    */
   constructor(...message: string[]) {
-    super(501, "NotImplemented", ...message)
+    super({
+      code: 501,
+      name: "NotImplemented",
+      message
+    })
   }
 }
 
@@ -350,7 +474,11 @@ export class BadGateway extends Exception {
    * @param message optional error message
    */
   constructor(...message: string[]) {
-    super(502, "BadGateway", ...message)
+    super({
+      code: 502,
+      name: "BadGateway",
+      message
+    })
   }
 }
 
@@ -361,7 +489,11 @@ export class ServiceUnavailable extends Exception {
    * @param message optional error message
    */
   constructor(...message: string[]) {
-    super(503, "ServiceUnavailable", ...message)
+    super({
+      code: 503,
+      name: "ServiceUnavailable",
+      message
+    })
   }
 }
 
@@ -372,7 +504,11 @@ export class GatewayTimeout extends Exception {
    * @param message optional error message
    */
   constructor(...message: string[]) {
-    super(504, "GatewayTimeout", ...message)
+    super({
+      code: 504,
+      name: "GatewayTimeout",
+      message
+    })
   }
 }
 
@@ -383,7 +519,11 @@ export class HTTPVersionNotSupported extends Exception {
    * @param message optional error message
    */
   constructor(...message: string[]) {
-    super(505, "HTTPVersionNotSupported", ...message)
+    super({
+      code: 505,
+      name: "HTTPVersionNotSupported",
+      message
+    })
   }
 }
 
@@ -394,7 +534,11 @@ export class VariantAlsoNegotiates extends Exception {
    * @param message optional error message
    */
   constructor(...message: string[]) {
-    super(506, "VariantAlsoNegotiates", ...message)
+    super({
+      code: 506,
+      name: "VariantAlsoNegotiates",
+      message
+    })
   }
 }
 
@@ -405,7 +549,11 @@ export class InsufficientStorage extends Exception {
    * @param message optional error message
    */
   constructor(...message: string[]) {
-    super(507, "InsufficientStorage", ...message)
+    super({
+      code: 507,
+      name: "InsufficientStorage",
+      message
+    })
   }
 }
 
@@ -416,7 +564,11 @@ export class LoopDetected extends Exception {
    * @param message optional error message
    */
   constructor(...message: string[]) {
-    super(508, "LoopDetected", ...message)
+    super({
+      code: 508,
+      name: "LoopDetected",
+      message
+    })
   }
 }
 
@@ -427,7 +579,11 @@ export class NotExtended extends Exception {
    * @param message optional error message
    */
   constructor(...message: string[]) {
-    super(510, "NotExtended", ...message)
+    super({
+      code: 510,
+      name: "NotExtended",
+      message
+    })
   }
 }
 
@@ -438,6 +594,10 @@ export class NetworkAuthenticationRequired extends Exception {
    * @param message optional error message
    */
   constructor(...message: string[]) {
-    super(511, "NetworkAuthenticationRequired", ...message)
+    super({
+      code: 511,
+      name: "NetworkAuthenticationRequired",
+      message
+    })
   }
 }

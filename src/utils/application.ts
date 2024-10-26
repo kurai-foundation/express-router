@@ -1,5 +1,5 @@
 import express, { Express } from "express"
-import RouterBuilder, { IRouterBuilderConfig } from "../router-builder"
+import RouterBuilder, { IRouterBuilderConfig } from "./router-builder"
 import { IBodyLessSchema, ISchema, TLogger } from "./router-utils"
 import { RouterContentRequestsWithSchema, RouterRequestsWithSchema } from "../requests/router-requests-with-schema"
 
@@ -71,7 +71,7 @@ export type TCreateRouteSchema = ISchema | IBodyLessSchema | undefined | null
 /**
  * Route creation method options
  */
-export interface ICreateRouteOptions<S extends TCreateRouteSchema, T extends Record<any, any> = {}> extends IRouterBuilderConfig<T> {
+export interface ICreateRouteOptions<S extends TCreateRouteSchema, T extends Record<any, any> = {}> extends Omit<IRouterBuilderConfig<T>, "logger"> {
   /** The root path of the route, use "/" to use without an additional path */
   root: string
 
@@ -149,7 +149,10 @@ export default class Application {
   ): TCreateRouteResponse<S, T> {
     const { root, schema, ...builderConfig } = options
 
-    const builder = new RouterBuilder<T>(builderConfig)
+    const builder = new RouterBuilder<T>({
+      ...builderConfig,
+      logger: this.config?.logger
+    })
 
     const router = schema !== undefined ? builder.schema(schema) : builder
 
@@ -163,9 +166,5 @@ export default class Application {
    */
   public get express() {
     return this.internalApp
-  }
-
-  public getRoutes() {
-
   }
 }

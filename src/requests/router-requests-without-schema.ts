@@ -1,15 +1,18 @@
 import { Router } from "express"
-import { ISchema } from "../utils/router-utils"
+import { ISchema, TLogger } from "../utils/router-utils"
 import { ParsedQs, ReqCallback, RouterRequestsCore } from "./router-requests-core"
 
 export default class RouterRequestsWithoutSchema<Attachments extends Record<any, any> = {}> extends RouterRequestsCore<Attachments> {
   /**
    * Predefined HTTP requests
    *
+   * @param _router express router instance
+   * @param logger optional logger
+   *
    * @internal
    */
-  constructor(protected readonly _router: Router) {
-    super(_router)
+  constructor(protected readonly _router: Router, logger?: TLogger) {
+    super(_router, logger)
   }
 
   /**
