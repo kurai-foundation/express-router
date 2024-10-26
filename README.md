@@ -12,12 +12,11 @@ build fault-tolerant backend applications
 - [Advanced API](#advanced-api)
 - - [Router builder](#router-builder)
   - [Routes with JOI schemas](#routes-with-joi-schemas)
-- [Future plans](#future-plans)
 - [License](#license)
 
 ## Installation
 
-There is not much to describe, the installation process is no different from any other package:
+There is little to describe, the installation process is no different from any other package:
 
 ```shell
 npm add @kurai-io/express-router
@@ -223,14 +222,6 @@ someRouter.get("/path/:address", someSchema, async req => {
 ```
 
 Available JOI schema types: `params`, `query`, `body`
-
-## Future plans
-
-Soon we plan to add the ability to generate swagger files and/or a direct swagger endpoint,
-which will replace the standard `GET /` endpoint.
-
-Also, we will soon add some preconfigured middlewares to 
-quickly add features such as, for example, JWT authorization.
 
 ## License
 
