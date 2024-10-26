@@ -162,15 +162,25 @@ export default class Application {
       logger: this.config?.logger
     })
 
+    this.injectBuilder(root, builder)
+
+    const router = schema !== undefined ? builder.schema(schema) : builder
+
+    return router as any
+  }
+
+  /**
+   * Inject existing route builder into application
+   *
+   * @param root route builder root
+   * @param builder route builder instance
+   */
+  public injectBuilder(root: string, builder: RouterBuilder) {
     if (!this.registeredBuilders.some(b => b.builder.symbol === builder.symbol)) {
       this.registeredBuilders.push({ builder, path: root })
     }
 
-    const router = schema !== undefined ? builder.schema(schema) : builder
-
-    this.internalApp.use(options.root, builder.router)
-
-    return router as any
+    this.internalApp.use(root, builder.router)
   }
 
   /**

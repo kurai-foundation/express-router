@@ -11,7 +11,7 @@ import { TCreateRouteSchema } from "../types"
 import { InternalServerError } from "../exceptions"
 
 export interface IRouterBuilderConfig<T> {
-  middleware?: (request: Request) => T
+  middleware?: (request: Request, builder: RouterBuilder) => T
   logger?: TLogger
 }
 
@@ -33,7 +33,7 @@ export default class RouterBuilder<T extends Record<any, any> = {}> extends Rout
       router.use((request, _, next) => {
         if (!config.middleware) return next()
 
-        Object.assign(request, config.middleware(request))
+        Object.assign(request, config.middleware(request, this))
 
         next()
       })
