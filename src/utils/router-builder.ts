@@ -1,18 +1,19 @@
 import { Router, Request } from "express"
 import Joi from "joi"
-import { IBodyLessSchema, ISchema } from "./utils/router-utils"
-import RouterRequestsWithoutSchema from "./requests/router-requests-without-schema"
+import { IBodyLessSchema, ISchema, TLogger } from "./router-utils"
+import RouterRequestsWithoutSchema from "../requests/router-requests-without-schema"
 import {
   RouterContentRequestsWithSchema,
   RouterRequestsWithSchema
-} from "./requests/router-requests-with-schema"
+} from "../requests/router-requests-with-schema"
 
 export interface IRouterBuilderConfig<T> {
   middleware?: (request: Request) => T
+  logger?: TLogger
 }
 
 export default class RouterBuilder<T extends Record<any, any> = {}> extends RouterRequestsWithoutSchema<T> {
-  constructor(private config?: IRouterBuilderConfig<T>) {
+  constructor(private readonly config?: IRouterBuilderConfig<T>) {
     const router = Router()
 
     if (config?.middleware) {
@@ -25,7 +26,7 @@ export default class RouterBuilder<T extends Record<any, any> = {}> extends Rout
       })
     }
 
-    super(router)
+    super(router, config?.logger)
   }
 
   public get router() {
@@ -42,8 +43,8 @@ export default class RouterBuilder<T extends Record<any, any> = {}> extends Rout
   public schema(schema: ISchema | null): RouterContentRequestsWithSchema<T>
 
   public schema(schema: ISchema | IBodyLessSchema | null): RouterContentRequestsWithSchema<T> | RouterRequestsWithSchema<T> {
-    if (schema && "body" in schema) return new RouterContentRequestsWithSchema<T>(this._router, schema)
+    if (schema && "body" in schema) return new RouterContentRequestsWithSchema<T>(this._router, schema, this.config?.logger)
 
-    return new RouterRequestsWithSchema<T>(this._router, schema)
+    return new RouterRequestsWithSchema<T>(this._router, schema, this.config?.logger)
   }
 }

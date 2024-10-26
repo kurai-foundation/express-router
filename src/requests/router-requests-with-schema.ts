@@ -1,5 +1,5 @@
 import { Router } from "express"
-import { ISchema } from "../utils/router-utils"
+import { ISchema, TLogger } from "../utils/router-utils"
 import { ParsedQs, ReqCallback, RouterRequestsCore } from "./router-requests-core"
 
 export class RouterContentRequestsWithSchema<Attachments extends Record<any, any> = {}> extends RouterRequestsCore<Attachments> {
@@ -10,9 +10,10 @@ export class RouterContentRequestsWithSchema<Attachments extends Record<any, any
    *
    * @param _router express router instance
    * @param schema inherited schema
+   * @param logger optional logger
    */
-  constructor(protected readonly _router: Router, protected readonly schema: ISchema | null) {
-    super(_router)
+  constructor(protected readonly _router: Router, protected readonly schema: ISchema | null, logger?: TLogger) {
+    super(_router, logger)
   }
 
   /**
@@ -88,10 +89,14 @@ export class RouterRequestsWithSchema<Attachments extends Record<any, any> = {}>
   /**
    * Predefined HTTP requests (that cannot contain body) with predefined by parent schema
    *
+   * @param _router express router instance
+   * @param schema inherited schema
+   * @param logger optional logger
+   *
    * @internal
    */
-  constructor(protected readonly _router: Router, schema: ISchema | null) {
-    super(_router, schema)
+  constructor(protected readonly _router: Router, schema: ISchema | null, logger?: TLogger) {
+    super(_router, schema, logger)
   }
 
   /**

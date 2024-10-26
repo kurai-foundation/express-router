@@ -1,7 +1,8 @@
 import { Request, Router } from "express"
-import { ISchema, routerUtils } from "../utils/router-utils"
+import { ISchema, routerUtils, TLogger } from "../utils/router-utils"
 import { RouteParameters } from "express-serve-static-core"
 import Exception from "../utils/exception"
+import CustomResponse from "../utils/custom-response"
 
 export type RequestMethods = "get" | "post" | "put" | "delete" | "options" | "patch" | "head"
 export interface ParsedQs {
@@ -10,13 +11,13 @@ export interface ParsedQs {
 
 export type ReqCallback<ReqBody = any, Query extends ParsedQs = any, Route extends string = any, Attachments extends Record<any, any> = {}> = (
   req: Request<RouteParameters<Route>, any, ReqBody, Query> & Attachments
-) => Promise<any>
+) => Promise<any> | any
 
 /**
  * @internal
  */
 export class RouterRequestsCore<Attachments extends Record<any, any> = {}> {
-  constructor(protected readonly _router: Router) {
+  constructor(protected readonly _router: Router, private readonly logger?: TLogger) {
   }
 
   /**
@@ -35,14 +36,16 @@ export class RouterRequestsCore<Attachments extends Record<any, any> = {}> {
     callback: ReqCallback<ReqBody, Query, Route, Attachments>
   ) {
     this._router[method](path, async (req, res) => {
-      await routerUtils(res, req)
+      await routerUtils(res, req, this.logger)
         .schema(schema)
         .errorBoundary(async self => {
           const result = await callback(req as any)
 
-          if (result instanceof Error) {
-            self.sendException(Exception.fromError(result))
+          if (result instanceof CustomResponse) {
+            self.sendJSON(result.content, result.code)
           }
+
+          if (result instanceof Error) self.sendException(Exception.fromError(result))
 
           self.sendJSON(result)
         })
