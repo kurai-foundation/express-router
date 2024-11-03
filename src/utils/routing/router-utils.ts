@@ -17,7 +17,7 @@ export interface ISchema<T extends Joi.AnySchema = Joi.AnySchema> extends IBodyL
 export type TLoggerFnType = ((message: string) => any) | ((...message: string[]) => any)
 
 /** Required methods for basic logging */
-export type TLogger<T = TLoggerFnType> = { error: T, warning?: T, info: T }
+export type TLogger<T = TLoggerFnType> = { error: T, warning?: T, info: T, debug?: T }
 
 /**
  * Utility function to perform internal things

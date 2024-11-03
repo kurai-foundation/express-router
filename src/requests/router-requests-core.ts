@@ -27,7 +27,7 @@ export type TRegisterRouteCallback = (path: string, method: RequestMethods, meta
 export class RouterRequestsCore<Attachments extends Record<any, any> = {}> {
   protected registerRoute: TRegisterRouteCallback | null = null
 
-  constructor(protected readonly _router: Router, private readonly logger?: TLogger) {
+  constructor(protected readonly _router: Router, private readonly logger?: TLogger, private readonly debug = false) {
   }
 
   public setupRouteRegisterCallback(registerRoute: TRegisterRouteCallback) {
@@ -50,6 +50,7 @@ export class RouterRequestsCore<Attachments extends Record<any, any> = {}> {
     callback: ReqCallback<ReqBody, Query, Route, Attachments>
   ) {
     this._router[method](path, async (req, res) => {
+      const startTime = performance.now()
       await routerUtils(res, req, this.logger)
         .schema(schema)
         .errorBoundary(async self => {
@@ -63,6 +64,11 @@ export class RouterRequestsCore<Attachments extends Record<any, any> = {}> {
 
           self.sendJSON(result)
         })
+
+      const execTime = Math.round((performance.now() - startTime) * 1000) / 1000
+      if (this.debug && this.logger) {
+        (this.logger.debug || this.logger.info)?.(`${ method.toUpperCase() } ${ path } - ${ execTime }ms`)
+      }
     })
 
     this.registerRoute?.(path, method, null, schema)

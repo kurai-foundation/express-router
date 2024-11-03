@@ -9,10 +9,11 @@ export default class RouterRequestsWithoutSchema<Attachments extends Record<any,
    * @param _router express router instance
    * @param logger optional logger
    *
+   * @param debug
    * @internal
    */
-  constructor(protected readonly _router: Router, logger?: TLogger) {
-    super(_router, logger)
+  constructor(protected readonly _router: Router, logger?: TLogger, debug = false) {
+    super(_router, logger, debug)
   }
 
   /**

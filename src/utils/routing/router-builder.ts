@@ -15,6 +15,7 @@ import { ConstructableMiddleware } from "../middleware/middleware"
 export interface IRouterBuilderConfig<T extends Record<any, any>> {
   middleware?: ConstructableMiddleware<T>
   logger?: TLogger
+  debug?: boolean
 }
 
 export interface IRegisteredRoute {
@@ -34,6 +35,10 @@ export default class RouterBuilder<T extends Record<any, any> = {}> extends Rout
     super(router, config?.logger)
 
     if (config?.middleware) {
+      const middlewareName = config.middleware.prototype.constructor.name
+
+      this.debugLog("Setting up middleware:", middlewareName)
+
       const middleware = new config.middleware()
 
       const customBuilder = middleware.onInitialize()
@@ -42,6 +47,7 @@ export default class RouterBuilder<T extends Record<any, any> = {}> extends Rout
       router.use(async (request, response, next) => {
         if (!config.middleware) return next()
 
+        this.debugLog("Middleware call:", middlewareName, request.method.toUpperCase(), request.path)
         let result: any
         await routerUtils(response, request).errorBoundary(() => {
           result = middleware.onRequest(request, response)
@@ -70,6 +76,8 @@ export default class RouterBuilder<T extends Record<any, any> = {}> extends Rout
    * @internal
    */
   protected registerRouteImpl(path: string, method: RequestMethods, metadata: RouteMetadata | null, schema?: ISchema | null) {
+    this.debugLog("New route registered:", method.toUpperCase(), path)
+
     const routeRegistered = this.registeredRoutes
       .findIndex(route => route.path.toLowerCase() === path.toLowerCase() && route.method === method)
 
@@ -109,8 +117,8 @@ export default class RouterBuilder<T extends Record<any, any> = {}> extends Rout
   public schema<S extends TCreateRouteSchema>(schema: S): S extends null ? RouterRequestsWithSchema<T> : (S extends IBodyLessSchema ? RouterRequestsWithSchema<T> : RouterContentRequestsWithSchema<T>) {
     let router: RouterContentRequestsWithSchema<T> | RouterRequestsWithSchema<T>
 
-    if (schema && "body" in schema) router = new RouterContentRequestsWithSchema<T>(this._router, schema, this.config?.logger)
-    else router = new RouterRequestsWithSchema<T>(this._router, schema as any, this.config?.logger)
+    if (schema && "body" in schema) router = new RouterContentRequestsWithSchema<T>(this._router, schema, this.config?.logger, this.config?.debug)
+    else router = new RouterRequestsWithSchema<T>(this._router, schema as any, this.config?.logger, this.config?.debug)
 
     router.setupRouteRegisterCallback(this.registerRouteImpl)
     return router as any
@@ -145,5 +153,11 @@ export default class RouterBuilder<T extends Record<any, any> = {}> extends Rout
         }
       }
     })
+  }
+
+  private debugLog(...message: string[]) {
+    if (!this.config?.debug) return
+
+    (this.config?.logger?.debug || this.config.logger?.info)?.(message.join(" "))
   }
 }

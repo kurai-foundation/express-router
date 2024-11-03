@@ -75,6 +75,13 @@ export interface IApplicationConfig {
   enableSwagger?: boolean
 
   /**
+   * Enable debug logs. Works only if logger is specified
+   *
+   * @default false
+   */
+  debug?: boolean
+
+  /**
    * Optional swagger configuration
    */
   swagger?: Omit<ISwaggerTransformerOptions, "builders"> & {
@@ -104,7 +111,10 @@ export default class Application {
     // Setup cors if possible
     const cors = getModule("cors")
 
-    if (cors) app.use(cors)
+    if (cors) {
+      this.debugLog("Setting up global CORS middleware")
+      app.use(cors())
+    }
     else (config?.logger?.warning || config?.logger?.error)?.("Running the application without CORS. Install the CORS package to automatically enable it")
 
     // Setup JSON middleware
@@ -138,6 +148,8 @@ export default class Application {
       const swaggerUi = getModule("swagger-ui-express")
 
       if (swaggerUi && swaggerModule?.swaggerTransformer) {
+        this.debugLog("Registering swagger at path GET", this.config?.swagger?.path || "/")
+
         app.use(this.config?.swagger?.path || "/", swaggerUi.serve, swaggerUi.setup(swaggerModule.swaggerTransformer({
           ...this.config?.swagger ?? {},
           builders: this.registeredBuilders
@@ -146,6 +158,7 @@ export default class Application {
         return
       }
 
+      this.debugLog("Registering default 200 OK response on path GET /");
       (config?.logger?.warning || config?.logger?.error)?.("Swagger module or swagger-ui-express not installed, setting up default GET path instead")
       app.get("/", (_, res) => {
         res.status(200).send("OK")
@@ -168,11 +181,14 @@ export default class Application {
     const builder = new RouterBuilder<T>(root, {
       ...builderConfig,
       logger: this.config?.logger,
+      debug: this.config?.debug
     }, this)
 
     this.injectBuilder(builder)
 
     const router = schema !== undefined ? builder.schema(schema) : builder
+
+    this.debugLog("Route created:", options.root)
 
     return router as any
   }
@@ -201,5 +217,11 @@ export default class Application {
 
   public get httpServer() {
     return this.internalServer
+  }
+
+  private debugLog(...message: string[]) {
+    if (!this.config?.debug) return
+
+    (this.config?.logger?.debug || this.config.logger?.info)?.(message.join(" "))
   }
 }

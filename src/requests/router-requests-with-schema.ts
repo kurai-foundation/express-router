@@ -11,9 +11,10 @@ export class RouterContentRequestsWithSchema<Attachments extends Record<any, any
    * @param _router express router instance
    * @param schema inherited schema
    * @param logger optional logger
+   * @param debug
    */
-  constructor(protected readonly _router: Router, protected readonly schema: ISchema | null, logger?: TLogger) {
-    super(_router, logger)
+  constructor(protected readonly _router: Router, protected readonly schema: ISchema | null, logger?: TLogger, debug = false) {
+    super(_router, logger, debug)
   }
 
   /**
@@ -93,10 +94,11 @@ export class RouterRequestsWithSchema<Attachments extends Record<any, any> = {}>
    * @param schema inherited schema
    * @param logger optional logger
    *
+   * @param debug
    * @internal
    */
-  constructor(protected readonly _router: Router, schema: ISchema | null, logger?: TLogger) {
-    super(_router, schema, logger)
+  constructor(protected readonly _router: Router, schema: ISchema | null, logger?: TLogger, debug = false) {
+    super(_router, schema, logger, debug)
   }
 
   /**
