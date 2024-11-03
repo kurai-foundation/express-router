@@ -118,7 +118,7 @@ export default class Application {
     else (config?.logger?.warning || config?.logger?.error)?.("Running the application without CORS. Install the CORS package to automatically enable it")
 
     // Setup JSON middleware
-    if (!config || config.json) {
+    if (!config || config.json !== false) {
       app.use(express.json({ limit: config?.json ? config.json.limit : "10mb" }))
     }
 
