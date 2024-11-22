@@ -1,6 +1,8 @@
+import CustomResponse from "./responses/custom-response"
 import { IBodyLessSchema, ISchema } from "./utils/routing/router-utils"
 import RouterBuilder, { IRouterBuilderConfig } from "./utils/routing/router-builder"
 import { RouterContentRequestsWithSchema, RouterRequestsWithSchema } from "./requests/router-requests-with-schema"
+import { Request } from "express"
 
 export interface ISwaggerServer {
   /** Server url */
@@ -12,6 +14,14 @@ export interface ISwaggerServer {
   /** Variables */
   variables?: Record<string, any>
 }
+
+export type ResponsesList<T extends string> = Record<T, new (content: any) => CustomResponse>
+
+export type AnyRequest = Request<any, any, any, any, any>
+
+export type RequestWithBody<T extends Record<string, any>> = Request<any, any, T>
+
+export type RequestWithQuery<T extends Record<string, string>> = Request<any, any, any, T>
 
 export interface ISwaggerTransformerOptions {
   /** Swagger documentation title */
