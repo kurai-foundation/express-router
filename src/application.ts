@@ -64,17 +64,6 @@ export interface IApplicationConfig {
   onAppStart?: (host: string, port: number, app: Express) => void | null
 
   /**
-   * If true, a root GET route will be automatically
-   * added to the application, which will return Swagger UI
-   *
-   * If `swagger-ui-express` or `@kurai-io/express-router-swagger` are not installed,
-   * then the default route with `200 OK` response will be served instead
-   *
-   * @default false
-   */
-  enableSwagger?: boolean
-
-  /**
    * Enable debug logs. Works only if logger is specified
    *
    * @default false
@@ -82,16 +71,22 @@ export interface IApplicationConfig {
   debug?: boolean
 
   /**
-   * Optional swagger configuration
+   * If true, a root GET route will be automatically
+   * added to the application, which will return Swagger UI
+   *
+   * If `swagger-ui-express` or `@kurai-io/express-router-swagger` are not installed,
+   * then the default route with `200 OK` response will be served instead
+   *
+   * Object configuration will be counted as true (swagger enabled)
    */
-  swagger?: Omit<ISwaggerTransformerOptions, "builders"> & {
+  swagger?: (Omit<ISwaggerTransformerOptions, "builders"> & {
     /**
      * Swagger UI serve path
      *
      * @default root
      * */
     path?: string
-  }
+  }) | true
 }
 
 export default class Application {
@@ -139,7 +134,7 @@ export default class Application {
 
     // Generate swagger only after setup
     setTimeout(() => {
-      if (!config?.enableSwagger) return
+      if (!config?.swagger) return
 
       const swaggerModule = getModule<{
         swaggerTransformer: (options: ISwaggerTransformerOptions) => any
@@ -148,10 +143,15 @@ export default class Application {
       const swaggerUi = getModule("swagger-ui-express")
 
       if (swaggerUi && swaggerModule?.swaggerTransformer) {
-        this.debugLog("Registering swagger at path GET", this.config?.swagger?.path || "/")
+        const swaggerConfig = {
+          path: "/",
+          ...(typeof this.config?.swagger === "object" ? this.config.swagger : {})
+        }
 
-        app.use(this.config?.swagger?.path || "/", swaggerUi.serve, swaggerUi.setup(swaggerModule.swaggerTransformer({
-          ...this.config?.swagger ?? {},
+        this.debugLog("Registering swagger at path GET", swaggerConfig.path || "/")
+
+        app.use(swaggerConfig.path || "/", swaggerUi.serve, swaggerUi.setup(swaggerModule.swaggerTransformer({
+          ...swaggerConfig,
           builders: this.registeredBuilders
         })))
 

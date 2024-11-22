@@ -81,11 +81,18 @@ export default class RouterBuilder<T extends Record<any, any> = {}> extends Rout
     const routeRegistered = this.registeredRoutes
       .findIndex(route => route.path.toLowerCase() === path.toLowerCase() && route.method === method)
 
+    const routeLink = routeRegistered !== -1 ? this.registeredRoutes[routeRegistered] : { path, method, metadata, schema }
+
     if (routeRegistered !== -1) {
-      this.registeredRoutes[routeRegistered] = { path, method, metadata, schema }
+      routeLink.path = path
+      routeLink.metadata = metadata
+      routeLink.method = method
+      routeLink.schema = schema
     } else {
-      this.registeredRoutes.push({ path, method, metadata, schema })
+      this.registeredRoutes.push(routeLink)
     }
+
+    return routeLink
   }
 
   /**

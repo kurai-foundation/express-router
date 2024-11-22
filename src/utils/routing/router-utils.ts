@@ -43,21 +43,32 @@ export function routerUtils<Res extends Response, Req extends Request>(res: Res,
   }
 
   return {
+    sendRaw(content: unknown, status = 200, headers?: Headers) {
+      if (responseSent) return
+
+      responseSent = true
+
+      res.status(status)
+
+      if (headers) Array.from(headers.entries()).forEach(([ key, value ]) => {
+        res.header(key, value)
+      })
+
+      res.send(content).end()
+    },
+
     /**
      * Send unformatted JSON response
      *
      * @param content response content
      * @param status response status, default is 200
+     * @param headers list of custom headers
      */
-    sendJSONRaw(content: unknown, status = 200) {
-      if (responseSent) return
-
-      responseSent = true
-      res.status(status)
-        .header("Content-Type", "application/json")
-        .header("Access-Control-Allow-Origin", "*")
-        .send(JSON.stringify(content))
-        .end()
+    sendJSONRaw(content: unknown, status = 200, headers?: Headers) {
+      this.sendRaw(JSON.stringify(content), status, new Headers({
+        "Content-Type": "application/json",
+        ...Object.fromEntries(headers?.entries() ?? [])
+      }))
     },
 
     /**
@@ -71,8 +82,6 @@ export function routerUtils<Res extends Response, Req extends Request>(res: Res,
         error: null,
         content: content
       }, status)
-
-      return this
     },
 
     /**
@@ -125,7 +134,7 @@ export function routerUtils<Res extends Response, Req extends Request>(res: Res,
 
       if (!req && schema) (logger?.warning ?? logger?.error)?.("Schema has been applied but no request data provided")
 
-      if (validationErrors.length > 0) this.sendException(new BadRequest(validationErrors .join(", ")))
+      if (validationErrors.length > 0) this.sendException(new BadRequest(validationErrors.join(", ")))
 
       return this
     },
@@ -139,7 +148,8 @@ export function routerUtils<Res extends Response, Req extends Request>(res: Res,
       if (responseSent) return this
       try {
         await exec(this)
-      } catch (error: any) {
+      }
+      catch (error: any) {
         if (error?.name === "Error") logger?.error((error?.name ?? "UnknownError") + ": " + (error?.message ?? "No details"))
 
         this.sendException(Exception.fromError(error))

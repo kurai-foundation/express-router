@@ -8,7 +8,8 @@ build fault-tolerant backend applications
 - [Installation](#installation)
 - [Basic usage](#basic-usage)
   - [Usage example](#usage-example)
-  - [Swagger documentation](#swagger-documentation)
+  - [Basic swagger integration](#basic-swagger-integration)
+  - [Advanced swagger integration](#advanced-swagger-integration)
 - [Advanced API](#advanced-api)
 - - [Router builder](#router-builder)
   - [Routes with JOI schemas](#routes-with-joi-schemas)
@@ -141,7 +142,7 @@ builder.schema(null).head("/:id", async request => {
 Here we have created a simple and fail-safe application that knows how to validate, create and find users. 
 It's not hard, right?
 
-### Swagger documentation
+### Basic swagger integration
 
 To enable Swagger documentation, the following packages must be installed:
 - `@kurai-io/express-router-swagger` - Swagger transformer
@@ -180,6 +181,31 @@ builder.schema(null).head("/:id", async request => {
 _The `500 Internal server error` and the `200 Success response` are added automatically._
 
 _The `200 Success response` will not be added if other `1xx - 3xx` responses have been added._
+
+### Advanced swagger integration
+
+If desired, it is possible to create routes in such a way that all required answers are 
+automatically displayed in the documentation. To do this, you need to create answer 
+objects within the route itself:
+
+```typescript
+// ...
+
+builder.schema(null).get("/content", (request, responses) => {
+  //                              content is required
+  //                                       v
+  return new responses.SuccessResponse(Math.random())
+}, {
+  // content filed omitted
+  SuccessResponse: {
+    code: 200,
+    example: 0.1391314135135
+  }
+})
+```
+
+This approach will automatically add answers to the documentation and get 
+rid of unnecessary variables in the models
 
 ## Advanced API
 

@@ -1,4 +1,5 @@
 import { Router } from "express"
+import { ICustomResponseOptions } from "../responses/custom-response"
 import { ISchema, TLogger } from "../utils/routing/router-utils"
 import { ParsedQs, ReqCallback, RouterRequestsCore } from "./router-requests-core"
 
@@ -25,12 +26,14 @@ export class RouterContentRequestsWithSchema<Attachments extends Record<any, any
    *
    * @param path relative path
    * @param callback model
+   * @param responses
    */
-  public post<Body = any, Query extends ParsedQs = any, Route extends string = any>(
+  public post<Body = any, Query extends ParsedQs = any, Route extends string = any, Responses extends Record<string, Omit<ICustomResponseOptions, "content">> = {}>(
     path: Route,
-    callback: ReqCallback<Body, Query, Route, Attachments>
+    callback: ReqCallback<Body, Query, Route, Attachments, Responses>,
+    responses?: Responses
   ) {
-    return this.request("post", path, this.schema, callback)
+    return this.request("post", path, this.schema, callback, responses)
   }
 
   /**
@@ -42,12 +45,14 @@ export class RouterContentRequestsWithSchema<Attachments extends Record<any, any
    *
    * @param path relative path
    * @param callback model
+   * @param responses
    */
-  public put<Body = any, Query extends ParsedQs = any, Route extends string = any>(
+  public put<Body = any, Query extends ParsedQs = any, Route extends string = any, Responses extends Record<string, Omit<ICustomResponseOptions, "content">> = {}>(
     path: Route,
-    callback: ReqCallback<Body, Query, Route, Attachments>
+    callback: ReqCallback<Body, Query, Route, Attachments, Responses>,
+    responses?: Responses
   ) {
-    return this.request("put", path, this.schema, callback)
+    return this.request("put", path, this.schema, callback, responses)
   }
 
   /**
@@ -57,12 +62,14 @@ export class RouterContentRequestsWithSchema<Attachments extends Record<any, any
    *
    * @param path relative path
    * @param callback model
+   * @param responses
    */
-  public patch<Body = any, Query extends ParsedQs = any, Route extends string = any>(
+  public patch<Body = any, Query extends ParsedQs = any, Route extends string = any, Responses extends Record<string, Omit<ICustomResponseOptions, "content">> = {}>(
     path: Route,
-    callback: ReqCallback<Body, Query, Route, Attachments>
+    callback: ReqCallback<Body, Query, Route, Attachments, Responses>,
+    responses?: Responses
   ) {
-    return this.request("patch", path, this.schema, callback)
+    return this.request("patch", path, this.schema, callback, responses)
   }
 
   /**
@@ -72,12 +79,14 @@ export class RouterContentRequestsWithSchema<Attachments extends Record<any, any
    *
    * @param path relative path
    * @param callback model
+   * @param responses
    */
-  public delete<Body = any, Query extends ParsedQs = any, Route extends string = any>(
+  public delete<Body = any, Query extends ParsedQs = any, Route extends string = any, Responses extends Record<string, Omit<ICustomResponseOptions, "content">> = {}>(
     path: Route,
-    callback: ReqCallback<Body, Query, Route, Attachments>
+    callback: ReqCallback<Body, Query, Route, Attachments, Responses>,
+    responses?: Responses
   ) {
-    return this.request("delete", path, this.schema, callback)
+    return this.request("delete", path, this.schema, callback, responses)
   }
 }
 
@@ -109,12 +118,14 @@ export class RouterRequestsWithSchema<Attachments extends Record<any, any> = {}>
    *
    * @param path relative path
    * @param callback model
+   * @param responses list of custom responses
    */
-  public get<Body = any, Query extends ParsedQs = any, Route extends string = any>(
+  public get<Body = any, Query extends ParsedQs = any, Route extends string = any, Responses extends Record<string, Omit<ICustomResponseOptions, "content">> = {}>(
     path: Route,
-    callback: ReqCallback<Body, Query, Route, Attachments>
+    callback: ReqCallback<Body, Query, Route, Attachments, Responses>,
+    responses?: Responses
   ) {
-    return this.request("get", path, this.schema, callback)
+    return this.request("get", path, this.schema, callback, responses)
   }
 
   /**
@@ -125,12 +136,14 @@ export class RouterRequestsWithSchema<Attachments extends Record<any, any> = {}>
    *
    * @param path relative path
    * @param callback model
+   * @param responses
    */
-  public options<Body = any, Query extends ParsedQs = any, Route extends string = any>(
+  public options<Body = any, Query extends ParsedQs = any, Route extends string = any, Responses extends Record<string, Omit<ICustomResponseOptions, "content">> = {}>(
     path: Route,
-    callback: ReqCallback<Body, Query, Route, Attachments>
+    callback: ReqCallback<Body, Query, Route, Attachments, Responses>,
+    responses?: Responses
   ) {
-    return this.request("options", path, this.schema, callback)
+    return this.request("options", path, this.schema, callback, responses)
   }
 
   /**
@@ -142,11 +155,13 @@ export class RouterRequestsWithSchema<Attachments extends Record<any, any> = {}>
    *
    * @param path relative path
    * @param callback model
+   * @param responses
    */
-  public head<Body = any, Query extends ParsedQs = any, Route extends string = any>(
+  public head<Body = any, Query extends ParsedQs = any, Route extends string = any, Responses extends Record<string, Omit<ICustomResponseOptions, "content">> = {}>(
     path: Route,
-    callback: ReqCallback<Body, Query, Route, Attachments>
+    callback: ReqCallback<Body, Query, Route, Attachments, Responses>,
+    responses?: Responses
   ) {
-    return this.request("head", path, this.schema, callback)
+    return this.request("head", path, this.schema, callback, responses)
   }
 }
