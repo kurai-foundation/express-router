@@ -79,7 +79,6 @@ export class RouterRequestsCore<Attachments extends Record<any, any> = {}> {
       await routerUtils(res, req, this.logger)
         .schema(schema)
         .errorBoundary(async self => {
-          console.log("call")
           const result = await callback(req as any, c as any)
 
           if (result instanceof CustomResponse) {
@@ -89,8 +88,6 @@ export class RouterRequestsCore<Attachments extends Record<any, any> = {}> {
               const send = result.headers.get("content-type") === "application/json"
                 ? self.sendJSONRaw
                 : self.sendRaw
-
-              console.log(send)
 
               send(result.content, result.code, result.headers)
             }

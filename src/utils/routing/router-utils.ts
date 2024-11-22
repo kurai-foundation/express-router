@@ -42,34 +42,45 @@ export function routerUtils<Res extends Response, Req extends Request>(res: Res,
     return null
   }
 
+  /**
+   * Send unformatted response
+   *
+   * @param content response content
+   * @param status response status, default is 200
+   * @param headers response headers
+   */
+  const sendRaw = (content: unknown, status = 200, headers?: Headers) => {
+    if (responseSent) return
+
+    responseSent = true
+
+    res.status(status)
+
+    if (headers) Array.from(headers.entries()).forEach(([ key, value ]) => {
+      res.header(key.toLowerCase(), value)
+    })
+
+    res.send(content).end()
+  }
+
+  /**
+   * Send unformatted JSON response
+   *
+   * @param content response content
+   * @param status response status, default is 200
+   * @param headers custom headers
+   */
+  const sendJSONRaw = (content: unknown, status = 200, headers?: Headers) => {
+    sendRaw(JSON.stringify(content), status, new Headers({
+      "content-type": "application/json",
+      ...Object.fromEntries((headers?.entries() ?? []).map(([key, value]) => [key.toLowerCase(), value]))
+    }))
+  }
+
   return {
-    sendRaw(content: unknown, status = 200, headers?: Headers) {
-      if (responseSent) return
+    sendRaw,
 
-      responseSent = true
-
-      res.status(status)
-
-      if (headers) Array.from(headers.entries()).forEach(([ key, value ]) => {
-        res.header(key, value)
-      })
-
-      res.send(content).end()
-    },
-
-    /**
-     * Send unformatted JSON response
-     *
-     * @param content response content
-     * @param status response status, default is 200
-     * @param headers list of custom headers
-     */
-    sendJSONRaw(content: unknown, status = 200, headers?: Headers) {
-      this.sendRaw(JSON.stringify(content), status, new Headers({
-        "Content-Type": "application/json",
-        ...Object.fromEntries(headers?.entries() ?? [])
-      }))
-    },
+    sendJSONRaw,
 
     /**
      * Send a formatted response
@@ -78,7 +89,7 @@ export function routerUtils<Res extends Response, Req extends Request>(res: Res,
      * @param status response status, default is 200
      */
     sendJSON(content: unknown, status = 200) {
-      this.sendJSONRaw({
+      sendJSONRaw({
         error: null,
         content: content
       }, status)
@@ -94,7 +105,7 @@ export function routerUtils<Res extends Response, Req extends Request>(res: Res,
      * @param status response status, default is 400
      */
     sendJSONError(error?: string, message?: string, status = 400) {
-      this.sendJSONRaw({
+      sendJSONRaw({
         error: error ?? "UnknownError",
         content: {
           message: message ?? "Unknown error occurred"
@@ -109,7 +120,7 @@ export function routerUtils<Res extends Response, Req extends Request>(res: Res,
      * @param exception exception to send as a response
      */
     sendException(exception: Exception) {
-      this.sendJSONRaw({
+      sendJSONRaw({
         error: exception.name,
         content: {
           message: exception.message,
