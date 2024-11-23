@@ -25,10 +25,11 @@ export type TLogger<T = TLoggerFnType> = { error: T, warning?: T, info: T, debug
  * @param res express response
  * @param req express request
  * @param logger optional logger instance
+ * @param debug enable extended responses
  *
  * @internal
  */
-export function routerUtils<Res extends Response, Req extends Request>(res: Res, req?: Req, logger?: TLogger) {
+export function routerUtils<Res extends Response, Req extends Request>(res: Res, req?: Req, logger?: TLogger, debug = false) {
   let responseSent = false
 
   const validateSchema = (schema: ISchema, type: keyof ISchema) => {
@@ -120,12 +121,15 @@ export function routerUtils<Res extends Response, Req extends Request>(res: Res,
      * @param exception exception to send as a response
      */
     sendException(exception: Exception) {
+      const content: Record<string, any> = {
+        message: exception.message
+      }
+
+      if (debug) content.stack = exception.stack
+
       sendJSONRaw({
         error: exception.name,
-        content: {
-          message: exception.message,
-          stack: exception.stack
-        }
+        content
       }, exception.code)
     },
 

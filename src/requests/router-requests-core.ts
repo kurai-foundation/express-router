@@ -76,7 +76,7 @@ export class RouterRequestsCore<Attachments extends Record<any, any> = {}> {
           })
         ])
       )
-      await routerUtils(res, req, this.logger)
+      await routerUtils(res, req, this.logger, this.debug)
         .schema(schema)
         .errorBoundary(async self => {
           const result = await callback(req as any, c as any)

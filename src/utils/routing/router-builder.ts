@@ -49,7 +49,7 @@ export default class RouterBuilder<T extends Record<any, any> = {}> extends Rout
 
         this.debugLog("Middleware call:", middlewareName, request.method.toUpperCase(), request.path)
         let result: any
-        await routerUtils(response, request).errorBoundary(() => {
+        await routerUtils(response, request, config.logger, config.debug).errorBoundary(() => {
           result = middleware.onRequest(request, response)
         })
 
