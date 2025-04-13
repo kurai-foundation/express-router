@@ -13,7 +13,7 @@ export interface IMiddlewareOptions<T = any> {
    * @param request express request
    * @param response express response
    */
-  onRequest(request: Request, response: Response): T
+  onRequest(request: Request, response: Response): T | Promise<T>
 }
 
 /** Represents middleware class itself */
@@ -41,7 +41,7 @@ export abstract class Middleware<T = any> {
    * @param request express request
    * @param response express response
    */
-  public onRequest(request: Request, response: Response): T {
+  public onRequest(request: Request, response: Response): T | Promise<T> {
     return this.options.onRequest(request, response)
   }
 }

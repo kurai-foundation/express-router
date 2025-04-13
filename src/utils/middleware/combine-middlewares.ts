@@ -19,13 +19,15 @@ export function combineMiddlewares<T extends ConstructableMiddleware<Record<any,
     constructor(parentBuilder: RouterBuilder) {
       super(
         {
-          onRequest: (request: Request, response: Response) => {
+          onRequest: async (request: Request, response: Response) => {
             return Object.assign(
               {},
-              ...middlewares.map(MiddlewareClass => {
-                const instance = new MiddlewareClass()
-                return instance.onRequest(request, response)
-              })
+              ...await Promise.all(
+                middlewares.map(MiddlewareClass => {
+                  const instance = new MiddlewareClass()
+                  return instance.onRequest(request, response)
+                })
+              )
             ) as CombinedMiddlewareResponseTypes<T>
           },
           onInitialize: () => {
