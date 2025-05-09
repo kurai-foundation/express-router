@@ -36,5 +36,5 @@ describe("GET and POST requests to simple routes", () => {
     expect(response.body.error).toEqual(null)
   })
 
-  afterAll(() => app.httpServer.close())
+  afterAll(() => app.httpServer().close())
 })

@@ -100,7 +100,7 @@ export interface IApplicationConfig {
   serverless?: boolean
 }
 
-export default class Application<T extends IApplicationConfig = IApplicationConfig> {
+export default class Application<T extends IApplicationConfig> {
   private readonly internalApp: Express
   private readonly internalServer?: http.Server | https.Server
 
@@ -231,7 +231,7 @@ export default class Application<T extends IApplicationConfig = IApplicationConf
     return this.internalApp
   }
 
-  public httpServer<K = T["serverless"], C = T["https"]>(): K extends true ? undefined : (C extends https.ServerOptions ? https.Server : http.Server) {
+  public httpServer(): T extends undefined ? http.Server : T["serverless"] extends true ? undefined : (T["https"] extends https.ServerOptions ? https.Server : http.Server) {
     return this.internalServer as any
   }
 

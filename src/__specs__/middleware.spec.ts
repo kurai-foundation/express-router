@@ -119,5 +119,5 @@ describe("Middleware data processing", () => {
     expect(response.body.error).not.toEqual(null)
   })
 
-  afterAll(() => app.httpServer.close())
+  afterAll(() => app.httpServer().close())
 })
