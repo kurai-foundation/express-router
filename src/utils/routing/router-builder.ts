@@ -9,7 +9,7 @@ import {
 import { RequestMethods, RouteMetadata } from "../../requests/router-requests-core"
 import { TCreateRouteSchema } from "../../types"
 import { InternalServerError } from "../../exceptions"
-import Application from "../../application"
+import Application, { IApplicationConfig } from "../../application"
 import { ConstructableMiddleware } from "../middleware/middleware"
 
 export interface IRouterBuilderConfig<T extends Record<any, any>> {
@@ -29,7 +29,7 @@ export default class RouterBuilder<T extends Record<any, any> = {}> extends Rout
   protected registeredRoutes: IRegisteredRoute[] = []
   public readonly symbol = Symbol()
 
-  constructor(public readonly root: string, private config?: IRouterBuilderConfig<T>, app?: Application) {
+  constructor(public readonly root: string, private config?: IRouterBuilderConfig<T>, app?: Application<IApplicationConfig>) {
     const router = Router()
 
     super(router, config?.logger)
