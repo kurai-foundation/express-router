@@ -1,4 +1,6 @@
 import express, { Express } from "express"
+import * as http from "node:http"
+import * as https from "node:https"
 import RouterBuilder from "./utils/routing/router-builder"
 import { TLogger } from "./utils/routing/router-utils"
 import {
@@ -8,7 +10,6 @@ import {
   TCreateRouteSchema
 } from "./types"
 import getModule from "./utils/get-module"
-import { Server } from "node:http"
 
 export interface IApplicationConfig {
   /**
@@ -87,11 +88,21 @@ export interface IApplicationConfig {
      * */
     path?: string
   }) | true
+
+  /**
+   * HTTPS configuration
+   */
+  https?: https.ServerOptions
+
+  /**
+   * If true, http/s server will not be automatically created and started
+   */
+  serverless?: boolean
 }
 
-export default class Application {
+export default class Application<T extends IApplicationConfig = IApplicationConfig> {
   private readonly internalApp: Express
-  private readonly internalServer: Server
+  private readonly internalServer?: http.Server | https.Server
 
   private registeredBuilders: RouterBuilder[] = []
 
@@ -100,7 +111,7 @@ export default class Application {
    *
    * @param config application configuration
    */
-  constructor(private readonly config?: IApplicationConfig) {
+  constructor(private readonly config?: T) {
     const app = express()
 
     // Setup cors if possible
@@ -123,14 +134,19 @@ export default class Application {
     const port = config?.port || (process.env.APP_PORT ? parseInt(process.env.APP_PORT, 10) : undefined) || 3000
     const host = config?.host || process.env.APP_HOST || "127.0.0.1"
 
-    this.internalServer = app.listen(port, host, () => {
-      if (config?.onAppStart) {
-        config.onAppStart(host, port, app)
-        return
-      }
+    if (!config?.serverless) {
+      if (config?.https) this.internalServer = https.createServer(config.https, app)
+      else this.internalServer = http.createServer(app)
 
-      if (config?.onAppStart !== null) config?.logger?.info(`Application running on host ${ host } and port ${ port }`)
-    })
+      this.internalServer.listen(port, host, () => {
+        if (config?.onAppStart) {
+          config.onAppStart(host, port, app)
+          return
+        }
+
+        if (config?.onAppStart !== null) config?.logger?.info(`Application running on host ${ host } and port ${ port }`)
+      })
+    }
 
     // Generate swagger only after setup
     setTimeout(() => {
@@ -215,8 +231,8 @@ export default class Application {
     return this.internalApp
   }
 
-  public get httpServer() {
-    return this.internalServer
+  public httpServer<K = T["serverless"], C = T["https"]>(): K extends true ? undefined : (C extends https.ServerOptions ? https.Server : http.Server) {
+    return this.internalServer as any
   }
 
   private debugLog(...message: string[]) {
