@@ -101,7 +101,7 @@ export class RouterRequestsCore<Attachments extends Record<any, any> = {}> {
           if (result instanceof Error) self.sendException(Exception.fromError(result))
 
           self.sendJSON(result)
-        })
+        }, code => resultCode = code)
 
       const execTime = Math.round((performance.now() - startTime) * 1000) / 1000
       if (debug?.[0] && debug?.[1]) {

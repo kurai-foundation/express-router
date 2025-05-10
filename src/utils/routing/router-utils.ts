@@ -161,8 +161,9 @@ export function routerUtils<Res extends Response, Req extends Request>(res: Res,
      * Catch any model errors and send them as a response
      *
      * @param exec model
+     * @param onError error callback
      */
-    async errorBoundary<T extends (self: typeof this) => unknown>(exec: T) {
+    async errorBoundary<T extends (self: typeof this) => unknown>(exec: T, onError?: (code: number) => void) {
       if (responseSent) return this
       try {
         await exec(this)
@@ -170,7 +171,10 @@ export function routerUtils<Res extends Response, Req extends Request>(res: Res,
       catch (error: any) {
         if (error?.name === "Error") logger?.error((error?.name ?? "UnknownError") + ": " + (error?.message ?? "No details"))
 
-        this.sendException(Exception.fromError(error))
+        const exception = Exception.fromError(error)
+
+        onError?.(exception.code)
+        this.sendException(exception)
       }
 
       return this
