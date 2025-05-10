@@ -36,9 +36,7 @@ export default class RouterBuilder<T extends Record<any, any> = {}> extends Rout
       ? [this.config?.logger, this.config?.debug] as [TLogger, boolean] : undefined)
 
     if (config?.middleware) {
-      const middlewareName = config.middleware.prototype.constructor.name
-
-      this.debugLog("Setting up middleware:", middlewareName)
+      this.debugLog("Setting up middleware:", config.middleware.name)
 
       const middleware = new config.middleware()
 
@@ -48,7 +46,7 @@ export default class RouterBuilder<T extends Record<any, any> = {}> extends Rout
       router.use(async (request, response, next) => {
         if (!config.middleware) return next()
 
-        this.debugLog("Middleware call:", middlewareName, request.method.toUpperCase(), request.path)
+        this.debugLog("Middleware call:", config.middleware.name, request.method.toUpperCase(), request.path)
         let result: any
 
         await routerUtils(response, request, config.logger, config.debug).errorBoundary(async () => {

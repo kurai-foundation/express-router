@@ -15,7 +15,10 @@ export type CombinedMiddlewareResponseTypes<T extends ConstructableMiddleware[]>
 export function combineMiddlewares<T extends ConstructableMiddleware<Record<any, any>>[]>(
   ...middlewares: T
 ): ConstructableMiddleware<CombinedMiddlewareResponseTypes<T>> {
+  const mws = middlewares.map(mw => mw.name).join(", ")
   const CombinedMiddleware = class extends Middleware<CombinedMiddlewareResponseTypes<T>> {
+    public static name = `CombinedMiddleware(${ mws })`
+
     constructor(parentBuilder: RouterBuilder) {
       super(
         {

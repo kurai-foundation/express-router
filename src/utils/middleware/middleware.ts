@@ -20,6 +20,8 @@ export interface IMiddlewareOptions<T = any> {
 export type ConstructableMiddleware<T = any> = new () => Middleware<T>
 
 export abstract class Middleware<T = any> {
+  public static name: string = this.prototype.constructor.name
+
   /**
    * Abstract middleware class
    *
