@@ -219,7 +219,7 @@ export default class Application<T extends IApplicationConfig> {
       this.registeredBuilders.push(builder)
     }
 
-    if (this.config?.logger) builder.attachLogger(this.config?.logger)
+    if (this.config?.logger) builder.attachLogger(this.config?.logger, this.config.debug)
 
     this.internalApp.use(builder.root, builder.router)
   }

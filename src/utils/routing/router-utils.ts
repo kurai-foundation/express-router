@@ -7,6 +7,7 @@ import { BadRequest } from "../../exceptions"
 export interface IBodyLessSchema<T extends Joi.AnySchema = Joi.AnySchema> {
   params?: T
   query?: T
+  headers?: T
 }
 
 /** Schema with body */
@@ -33,6 +34,7 @@ export function routerUtils<Res extends Response, Req extends Request>(res: Res,
   let responseSent = false
 
   const validateSchema = (schema: ISchema, type: keyof ISchema) => {
+
     if (req?.[type] && schema[type]) {
       const result = schema[type]?.validate(req[type])
       if (!result) return null
@@ -57,7 +59,7 @@ export function routerUtils<Res extends Response, Req extends Request>(res: Res,
 
     res.status(status)
 
-    if (headers) Array.from(headers.entries()).forEach(([ key, value ]) => {
+    if (headers) Array.from(headers.entries()).forEach(([key, value]) => {
       res.header(key.toLowerCase(), value)
     })
 
@@ -144,7 +146,8 @@ export function routerUtils<Res extends Response, Req extends Request>(res: Res,
       const validationErrors = [
         validateSchema(schema, "params"),
         validateSchema(schema, "query"),
-        validateSchema(schema, "body")
+        validateSchema(schema, "body"),
+        validateSchema(schema, "headers")
       ].filter(error => error !== null) as string[]
 
       if (!req && schema) (logger?.warning ?? logger?.error)?.("Schema has been applied but no request data provided")

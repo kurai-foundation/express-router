@@ -8,13 +8,12 @@ export default class RouterRequestsWithoutSchema<Attachments extends Record<any,
    * Predefined HTTP requests
    *
    * @param _router express router instance
-   * @param logger optional logger
+   * @param debugConfig debug logging configuration
    *
-   * @param debug
    * @internal
    */
-  constructor(protected readonly _router: Router, logger?: TLogger, debug = false) {
-    super(_router, logger, debug)
+  constructor(protected readonly _router: Router, debugConfig?: () => [TLogger, boolean] | undefined) {
+    super(_router, debugConfig)
   }
 
   /**

@@ -11,11 +11,10 @@ export class RouterContentRequestsWithSchema<Attachments extends Record<any, any
    *
    * @param _router express router instance
    * @param schema inherited schema
-   * @param logger optional logger
-   * @param debug
+   * @param debugConfig debug logging configuration
    */
-  constructor(protected readonly _router: Router, protected readonly schema: ISchema | null, logger?: TLogger, debug = false) {
-    super(_router, logger, debug)
+  constructor(protected readonly _router: Router, protected readonly schema: ISchema | null, debugConfig?: () => [TLogger, boolean] | undefined) {
+    super(_router, debugConfig)
   }
 
   /**
@@ -101,13 +100,12 @@ export class RouterRequestsWithSchema<Attachments extends Record<any, any> = {}>
    *
    * @param _router express router instance
    * @param schema inherited schema
-   * @param logger optional logger
+   * @param debugConfig debug logging configuration
    *
-   * @param debug
    * @internal
    */
-  constructor(protected readonly _router: Router, schema: ISchema | null, logger?: TLogger, debug = false) {
-    super(_router, schema, logger, debug)
+  constructor(protected readonly _router: Router, schema: ISchema | null, debugConfig?: () => [TLogger, boolean] | undefined) {
+    super(_router, schema, debugConfig)
   }
 
   /**

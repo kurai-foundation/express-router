@@ -1,5 +1,4 @@
 import { Router } from "express"
-import Joi from "joi"
 import { IBodyLessSchema, ISchema, routerUtils, TLogger } from "./router-utils"
 import RouterRequestsWithoutSchema from "../../requests/router-requests-without-schema"
 import {
@@ -28,11 +27,13 @@ export interface IRegisteredRoute {
 export default class RouterBuilder<T extends Record<any, any> = {}> extends RouterRequestsWithoutSchema<T> {
   protected registeredRoutes: IRegisteredRoute[] = []
   public readonly symbol = Symbol()
+  private debugLogTail: string[] = []
 
   constructor(public readonly root: string, private config?: IRouterBuilderConfig<T>, app?: Application<IApplicationConfig>) {
     const router = Router()
 
-    super(router, config?.logger)
+    super(router, () => this.config?.logger && this.config.debug
+      ? [this.config?.logger, this.config?.debug] as [TLogger, boolean] : undefined)
 
     if (config?.middleware) {
       const middlewareName = config.middleware.prototype.constructor.name
@@ -92,7 +93,8 @@ export default class RouterBuilder<T extends Record<any, any> = {}> extends Rout
       routeLink.metadata = metadata
       routeLink.method = method
       routeLink.schema = schema
-    } else {
+    }
+    else {
       this.registeredRoutes.push(routeLink)
     }
 
@@ -107,20 +109,6 @@ export default class RouterBuilder<T extends Record<any, any> = {}> extends Rout
   }
 
   /**
-   * @deprecated
-   *
-   * Generate schema from source
-   *
-   * @param target target validation unit
-   * @param content schema
-   */
-  public generateSchema(target: "body" | "params" | "query", content: { [key: string]: any }): ISchema {
-    return {
-      [target]: Joi.object(content)
-    }
-  }
-
-  /**
    * Predefine a schema for the following handlers
    *
    * @param schema JOI schema
@@ -128,8 +116,11 @@ export default class RouterBuilder<T extends Record<any, any> = {}> extends Rout
   public schema<S extends TCreateRouteSchema>(schema: S): S extends null ? RouterRequestsWithSchema<T> : (S extends IBodyLessSchema ? RouterRequestsWithSchema<T> : RouterContentRequestsWithSchema<T>) {
     let router: RouterContentRequestsWithSchema<T> | RouterRequestsWithSchema<T>
 
-    if (schema && "body" in schema) router = new RouterContentRequestsWithSchema<T>(this._router, schema, this.config?.logger, this.config?.debug)
-    else router = new RouterRequestsWithSchema<T>(this._router, schema as any, this.config?.logger, this.config?.debug)
+    const debugConfig = () =>
+      this.config?.logger && this.config.debug ? [this.config?.logger, this.config?.debug] as [TLogger, boolean] : undefined
+
+    if (schema && "body" in schema) router = new RouterContentRequestsWithSchema<T>(this._router, schema, debugConfig)
+    else router = new RouterRequestsWithSchema<T>(this._router, schema as any, debugConfig)
 
     router.setupRouteRegisterCallback(this.registerRouteImpl)
     return router as any
@@ -139,11 +130,18 @@ export default class RouterBuilder<T extends Record<any, any> = {}> extends Rout
    * Attach logger to the existing router builder instance
    *
    * @param logger compatible logger
+   * @param debug enable debug
    */
-  public attachLogger(logger?: TLogger) {
+  public attachLogger(logger?: TLogger, debug?: boolean) {
     this.config = {
+      ...this.config,
       logger,
-      ...this.config
+      debug
+    }
+
+    if (this.config.debug && this.config.logger && this.debugLogTail.length > 0) {
+      this.debugLogTail.forEach(message => this.debugLog(message))
+      this.debugLogTail = []
     }
   }
 
@@ -167,7 +165,11 @@ export default class RouterBuilder<T extends Record<any, any> = {}> extends Rout
   }
 
   private debugLog(...message: string[]) {
-    if (!this.config?.debug) return
+    if (!this.config?.debug || !this.config?.logger) {
+      this.debugLogTail.slice(1)
+      this.debugLogTail.push(message.join(" "))
+      return
+    }
 
     (this.config?.logger?.debug || this.config.logger?.info)?.(message.join(" "))
   }

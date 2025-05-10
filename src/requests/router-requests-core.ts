@@ -30,7 +30,7 @@ export type TRegisterRouteCallback = (path: string, method: RequestMethods, meta
 export class RouterRequestsCore<Attachments extends Record<any, any> = {}> {
   protected registerRoute: TRegisterRouteCallback | null = null
 
-  constructor(protected readonly _router: Router, private readonly logger?: TLogger, private readonly debug = false) {
+  constructor(protected readonly _router: Router, private readonly debugConfig?: () => [TLogger, boolean] | undefined) {
   }
 
   public setupRouteRegisterCallback(registerRoute: TRegisterRouteCallback) {
@@ -66,6 +66,7 @@ export class RouterRequestsCore<Attachments extends Record<any, any> = {}> {
     if (!routeLink) throw new Error("No route registration implementation found")
 
     this._router[method](path, async (req, res) => {
+      const debug = this.debugConfig?.()
       const startTime = performance.now()
       const c = Object.fromEntries(
         Object.entries(responses ?? {}).map(([key, value]) => [
@@ -76,10 +77,12 @@ export class RouterRequestsCore<Attachments extends Record<any, any> = {}> {
           })
         ])
       )
-      await routerUtils(res, req, this.logger, this.debug)
+      let resultCode = 200
+      await routerUtils(res, req, debug?.[0], debug?.[1])
         .schema(schema)
         .errorBoundary(async self => {
           const result = await callback(req as any, c as any)
+          resultCode = result?.code ?? 200
 
           if (result instanceof CustomResponse) {
             const isRaw = result.raw || (result.headers && result.headers.get("content-type") !== "application/json")
@@ -101,8 +104,8 @@ export class RouterRequestsCore<Attachments extends Record<any, any> = {}> {
         })
 
       const execTime = Math.round((performance.now() - startTime) * 1000) / 1000
-      if (this.debug && this.logger) {
-        (this.logger.debug || this.logger.info)?.(`${ method.toUpperCase() } ${ path } - ${ execTime }ms`)
+      if (debug?.[0] && debug?.[1]) {
+        (debug?.[0]?.debug || debug?.[0]?.info)?.(`${ method.toUpperCase() } ${ path } - ${ resultCode } - ${ execTime }ms`)
       }
     })
 
