@@ -1,5 +1,7 @@
 import { Request, Router } from "express"
-import { IRegisteredRoute } from "../utils/routing/router-builder"
+import FileResponse from "../responses/file-response"
+import Redirect from "../responses/redirect"
+import { IRegisteredRoute } from "../utils"
 import { ISchema, routerUtils, TLogger } from "../utils/routing/router-utils"
 import { RouteParameters } from "express-serve-static-core"
 import Exception from "../responses/exception"
@@ -81,7 +83,7 @@ export class RouterRequestsCore<Attachments extends Record<any, any> = {}> {
       )
       let resultCode = 200
       await routerUtils(res, req, debug?.[0], debug?.[1])
-        .schema(schema)
+        .schema(schema, code => resultCode = code)
         .errorBoundary(async self => {
           const result = await callback(req as any, c as any)
           resultCode = result?.code ?? 200
@@ -101,6 +103,10 @@ export class RouterRequestsCore<Attachments extends Record<any, any> = {}> {
           }
 
           if (result instanceof Error) self.sendException(Exception.fromError(result))
+
+          if (result instanceof Redirect) self.redirect(result.to, result.code)
+
+          if (result instanceof FileResponse) self.sendFile(result.path, result.options)
 
           self.sendJSON(result)
         }, code => resultCode = code)

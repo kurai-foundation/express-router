@@ -1,4 +1,5 @@
 import { Request, Response } from "express"
+import { SendFileOptions } from "express-serve-static-core"
 import Joi from "joi"
 import Exception from "../../responses/exception"
 import { BadRequest } from "../../exceptions"
@@ -86,6 +87,34 @@ export function routerUtils<Res extends Response, Req extends Request>(res: Res,
     sendJSONRaw,
 
     /**
+     * Call redirect method of express
+     *
+     * @param {number} code redirect status code, default is 302
+     * @param {string} to redirect destination
+     */
+    redirect: (to: string, code: number = 302) => {
+      if (responseSent) return
+
+      responseSent = true
+
+      res.redirect(code, to)
+    },
+
+    /**
+     * Send file using native express API
+     *
+     * @param {string} path path to file
+     * @param {SendFileOptions} options file sending options
+     */
+    sendFile: (path: string, options?: SendFileOptions) => {
+      if (responseSent) return
+
+      responseSent = true
+
+      res.sendFile(path, options ?? {})
+    },
+
+    /**
      * Send a formatted response
      *
      * @param content response content
@@ -139,8 +168,9 @@ export function routerUtils<Res extends Response, Req extends Request>(res: Res,
      * Validate JOI schema
      *
      * @param schema request JOI schema
+     * @param onError error callback
      */
-    schema(schema: ISchema | null) {
+    schema(schema: ISchema | null, onError?: (code: number) => any) {
       if (!schema) return this
 
       const validationErrors = [
@@ -152,7 +182,10 @@ export function routerUtils<Res extends Response, Req extends Request>(res: Res,
 
       if (!req && schema) (logger?.warning ?? logger?.error)?.("Schema has been applied but no request data provided")
 
-      if (validationErrors.length > 0) this.sendException(new BadRequest(validationErrors.join(", ")))
+      if (validationErrors.length > 0) {
+        this.sendException(new BadRequest(validationErrors.join(", ")))
+        onError?.(400)
+      }
 
       return this
     },
