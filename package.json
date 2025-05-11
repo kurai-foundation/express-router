@@ -21,6 +21,12 @@
     },
     "./types": {
       "types": "./dist/types.d.ts"
+    },
+    "./requests": {
+      "types": "./dist/requests/index.d.ts"
+    },
+    "./utils": {
+      "types": "./dist/utils/index.d.ts"
     }
   },
   "keywords": [

@@ -19,7 +19,6 @@ export default defineConfig({
       entry: {
         "express-router": path.resolve(__dirname, "src/index.ts"),
         "exceptions": path.resolve(__dirname, "src/exceptions.ts"),
-        "types": path.resolve(__dirname, "src/types.ts"),
       },
       // Name of the library (for UMD/IIFE builds)
       name: "express-router",
