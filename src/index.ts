@@ -1,6 +1,8 @@
 import Application from "./application"
 import { ParsedQs, RequestMethods, RouteMetadata } from "./requests/router-requests-core"
 import CustomResponse, { ResponseFactory } from "./responses/custom-response"
+import FileResponse from "./responses/file-response"
+import Redirect from "./responses/redirect"
 import { combineMiddlewares } from "./utils/middleware/combine-middlewares"
 import { Middleware } from "./utils/middleware/middleware"
 import RouterBuilder from "./utils/routing/router-builder"
@@ -12,6 +14,8 @@ export {
   ResponseFactory,
   CustomResponse,
   RouterBuilder,
+  FileResponse,
+  Redirect,
   routerUtils,
   Application,
   type ISchema,
