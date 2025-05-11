@@ -21,8 +21,11 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
+      - name: Remove specs
+        run: rm -rf ./src/__specs__
+
       - name: Build
-        run: tsc
+        run: npm run build
 
       - name: Save Build Artifacts
         uses: actions/upload-artifact@v4
