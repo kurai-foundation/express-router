@@ -10,17 +10,17 @@
   },
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/express-router.mjs",
-      "require": "./dist/express-router.js"
+      "types": "./dist/src/index.d.ts",
+      "import": "./dist/src/express-router.mjs",
+      "require": "./dist/src/express-router.js"
     },
     "./exceptions": {
-      "types": "./dist/exceptions.d.ts",
-      "import": "./dist/extensions.mjs",
-      "require": "./dist/extensions.js"
+      "types": "./dist/src/exceptions.d.ts",
+      "import": "./dist/src/extensions.mjs",
+      "require": "./dist/src/extensions.js"
     },
     "./types": {
-      "types": "./dist/types.d.ts"
+      "types": "./dist/src/types.d.ts"
     }
   },
   "keywords": [
