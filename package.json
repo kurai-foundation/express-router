@@ -16,8 +16,8 @@
     },
     "./exceptions": {
       "types": "./dist/exceptions.d.ts",
-      "import": "./dist/extensions.mjs",
-      "require": "./dist/extensions.js"
+      "import": "./dist/exceptions.mjs",
+      "require": "./dist/exceptions.js"
     },
     "./types": {
       "types": "./dist/types.d.ts"
