@@ -20,6 +20,8 @@ export interface RouteMetadata {
   responses?: ((new () => Exception) | (new () => CustomResponse))[]
   description?: string
   example?: any
+  auth?: string[] | Record<string, string[]>
+  deprecated?: boolean
 }
 
 export type TRegisterRouteCallback = (path: string, method: RequestMethods, metadata: RouteMetadata | null, schema?: ISchema | null) => IRegisteredRoute

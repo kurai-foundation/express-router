@@ -37,6 +37,9 @@ export interface ISwaggerTransformerOptions {
   servers?: ISwaggerServer[]
 
   builders: RouterBuilder[]
+
+  /** List of security schemas */
+  securitySchemas?: Record<string, SecurityScheme>
 }
 
 // Schema definition in configuration
@@ -64,3 +67,47 @@ export type TCreateRouteResponse<
       : RouterContentRequestsWithSchema<T>
     )
   : (S extends null ? RouterRequestsWithSchema<T> : RouterBuilder<T>)
+
+interface BaseSecurityScheme {
+  description?: string
+}
+
+export interface HttpSecurityScheme extends BaseSecurityScheme {
+  type: "http"
+  scheme: string
+  bearerFormat?: string
+}
+
+export interface ApiKeySecurityScheme extends BaseSecurityScheme {
+  type: "apiKey"
+  in: "query" | "header" | "cookie"
+  name: string;
+}
+
+export interface OAuth2SecurityScheme extends BaseSecurityScheme {
+  type: "oauth2"
+  flows: {
+    implicit?: OAuth2Flow
+    password?: OAuth2Flow
+    clientCredentials?: OAuth2Flow
+    authorizationCode?: OAuth2Flow
+  }
+}
+
+export interface OAuth2Flow {
+  authorizationUrl?: string
+  tokenUrl?: string
+  refreshUrl?: string
+  scopes: Record<string, string>
+}
+
+export interface OpenIdSecurityScheme extends BaseSecurityScheme {
+  type: "openIdConnect";
+  openIdConnectUrl: string;
+}
+
+export type SecurityScheme =
+  | HttpSecurityScheme
+  | ApiKeySecurityScheme
+  | OAuth2SecurityScheme
+  | OpenIdSecurityScheme

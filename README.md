@@ -159,7 +159,7 @@ const app = new Application({
 Optionally, you can customize the display of documentation
 using the `swagger` field in the configuration
 
-The documentation will be generated automatically from schemes and 
+The documentation will be generated automatically from schemas and 
 registered routes, the names will be set to automatically generated strings.
 
 If desired, the route can be set the exception list and name manually, 
