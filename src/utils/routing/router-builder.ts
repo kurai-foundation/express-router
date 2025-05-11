@@ -15,6 +15,7 @@ export interface IRouterBuilderConfig<T extends Record<any, any>> {
   middleware?: ConstructableMiddleware<T>
   logger?: TLogger
   debug?: boolean
+  tags?: string[]
 }
 
 export interface IRegisteredRoute {
@@ -27,6 +28,7 @@ export interface IRegisteredRoute {
 export default class RouterBuilder<T extends Record<any, any> = {}> extends RouterRequestsWithoutSchema<T> {
   protected registeredRoutes: IRegisteredRoute[] = []
   public readonly symbol = Symbol()
+  public readonly tags?: string[]
   private debugLogTail: string[] = []
 
   constructor(public readonly root: string, private config?: IRouterBuilderConfig<T>, app?: Application<IApplicationConfig>) {
@@ -34,6 +36,8 @@ export default class RouterBuilder<T extends Record<any, any> = {}> extends Rout
 
     super(router, () => this.config?.logger && this.config.debug
       ? [this.config?.logger, this.config?.debug] as [TLogger, boolean] : undefined)
+
+    this.tags = config?.tags
 
     if (config?.middleware) {
       this.debugLog("Setting up middleware:", config.middleware.name)
@@ -132,9 +136,9 @@ export default class RouterBuilder<T extends Record<any, any> = {}> extends Rout
    */
   public attachLogger(logger?: TLogger, debug?: boolean) {
     this.config = {
+      debug,
       ...this.config,
       logger,
-      debug
     }
 
     if (this.config.debug && this.config.logger && this.debugLogTail.length > 0) {
