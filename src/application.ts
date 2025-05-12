@@ -111,12 +111,17 @@ export interface IApplicationConfig {
     jsonFilePath?: string
 
     /**
+     * Custom title displayed in Swagger UI
+     */
+    title?: string
+
+    /**
      * Custom title for the Swagger UI page. This will be displayed
      * in the browser's title bar and as the main heading of the UI
      *
      * @default Swagger's default title
      */
-    title?: string
+    siteTitle?: string
 
     /**
      * URL to a custom favicon for the Swagger UI page.
@@ -259,6 +264,9 @@ export default class Application<T extends IApplicationConfig> {
     }
 
     const swaggerUISetupOptions: Record<string, any> = { swaggerOptions: {} }
+
+    if (swaggerConfig.icon) swaggerUISetupOptions.swaggerOptions.customfavIcon = swaggerConfig.icon
+    if (swaggerConfig.siteTitle) swaggerUISetupOptions.swaggerOptions.customSiteTitle = swaggerConfig.siteTitle
     if (swaggerConfig.theme) {
       const themeModule = getModule<{ SwaggerTheme: new () => any }>("swagger-themes")
 
