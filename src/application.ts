@@ -207,8 +207,6 @@ export default class Application<T extends IApplicationConfig> {
     const host = config?.host || process.env.APP_HOST || "127.0.0.1"
 
     if (!config?.serverless) {
-      (config?.logger?.warning)?.("Running application in serverless mode, you should configure http server yourself")
-
       if (config?.https) this.internalServer = https.createServer(config.https, app)
       else this.internalServer = http.createServer(app)
 
@@ -220,6 +218,10 @@ export default class Application<T extends IApplicationConfig> {
 
         if (config?.onAppStart !== null) config?.logger?.info(`Application running on host ${ host } and port ${ port }`)
       })
+    }
+    else {
+      (config?.logger?.warning || (config?.logger as any)?.warn)?.("Running application in serverless mode, you should configure http" +
+        " server yourself")
     }
 
     this.internalApp = app
@@ -265,8 +267,8 @@ export default class Application<T extends IApplicationConfig> {
 
     const swaggerUISetupOptions: Record<string, any> = { swaggerOptions: {} }
 
-    if (swaggerConfig.icon) swaggerUISetupOptions.swaggerOptions.customfavIcon = swaggerConfig.icon
-    if (swaggerConfig.siteTitle) swaggerUISetupOptions.swaggerOptions.customSiteTitle = swaggerConfig.siteTitle
+    if (swaggerConfig.icon) swaggerUISetupOptions.customfavIcon = swaggerConfig.icon
+    if (swaggerConfig.siteTitle) swaggerUISetupOptions.customSiteTitle = swaggerConfig.siteTitle
     if (swaggerConfig.theme) {
       const themeModule = getModule<{ SwaggerTheme: new () => any }>("swagger-themes")
 
