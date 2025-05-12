@@ -316,7 +316,7 @@ export default class Application<T extends IApplicationConfig> {
     const builder = new RouterBuilder<T>(root, {
       ...builderConfig,
       logger: this.config?.logger,
-      debug: this.getDebugState()
+      debug: this.config?.debug
     }, this)
 
     this.injectBuilder(builder)
@@ -338,7 +338,7 @@ export default class Application<T extends IApplicationConfig> {
       this.registeredBuilders.push(builder)
     }
 
-    if (this.config?.logger) builder.attachLogger(this.config?.logger, this.getDebugState())
+    if (this.config?.logger) builder.attachLogger(this.config?.logger, this.config.debug)
 
     this.internalApp.use(builder.root, builder.router)
 
@@ -352,10 +352,6 @@ export default class Application<T extends IApplicationConfig> {
     return this.internalApp
   }
 
-  public afterInstall(callback: (app: this) => any) {
-    callback?.(this)
-  }
-
   public httpServer(): T extends undefined ? http.Server : T["serverless"] extends true ? undefined : (T["https"] extends https.ServerOptions ? https.Server : http.Server) {
     return this.internalServer as any
   }
@@ -364,9 +360,5 @@ export default class Application<T extends IApplicationConfig> {
     if (!this.config?.debug) return
 
     (this.config?.logger?.debug || this.config.logger?.info)?.(message.join(" "))
-  }
-
-  private getDebugState() {
-    return typeof this.config?.debug === "object" ? this.config.debug.logs : this.config?.debug
   }
 }

@@ -133,7 +133,7 @@ export default class RouterBuilder<T extends Record<any, any> = {}> extends Rout
    * @param logger compatible logger
    * @param debug enable debug
    */
-  public attachLogger(logger?: TLogger, debug?: boolean) {
+  public attachLogger(logger?: TLogger, debug?: IApplicationConfig["debug"]) {
     this.config = {
       debug,
       ...this.config,
