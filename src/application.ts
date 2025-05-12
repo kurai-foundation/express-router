@@ -1,7 +1,7 @@
 import express, { Express } from "express"
 import * as http from "node:http"
 import * as https from "node:https"
-import { ICreateRouteOptions, ISwaggerTransformerOptions, TCreateRouteResponse, TCreateRouteSchema } from "./types"
+import { Cors, ICreateRouteOptions, ISwaggerTransformerOptions, SwaggerThemes, TCreateRouteResponse, TCreateRouteSchema } from "./types"
 import { TLogger } from "./utils"
 import getModule from "./utils/get-module"
 import RouterBuilder from "./utils/routing/router-builder"
@@ -63,6 +63,67 @@ export interface IApplicationConfig {
    * @param app express application itself
    */
   onAppStart?: (host: string, port: number, app: Express) => void | null
+
+  /**
+   * Cross-Origin Resource Sharing configuration
+   *
+   * The `cors` module must be installed, otherwise the option has no effect whatsoever
+   */
+  cors?: {
+    /**
+     * Configures the Access-Control-Allow-Origin CORS header.
+     * Can be a string (e.g. "https://example.com"), an array of origins,
+     * a RegExp to match origins, or a custom function `(req, callback) => void`
+     * for dynamic origin resolution.
+     */
+    origin?: Cors.StaticOrigin | Cors.CustomOrigin;
+
+    /**
+     * Configures the Access-Control-Allow-Methods CORS header,
+     * listing the HTTP methods allowed for CORS requests.
+     * @default 'GET,HEAD,PUT,PATCH,POST,DELETE'
+     */
+    methods?: string | string[];
+
+    /**
+     * Configures the Access-Control-Allow-Headers CORS header,
+     * specifying which headers can be used during the actual request.
+     */
+    allowedHeaders?: string | string[];
+
+    /**
+     * Configures the Access-Control-Expose-Headers CORS header,
+     * indicating which headers browsers are allowed to access
+     * on the response.
+     */
+    exposedHeaders?: string | string[];
+
+    /**
+     * Configures the Access-Control-Allow-Credentials CORS header.
+     * Set to true to allow cookies and other credentials in CORS requests.
+     */
+    credentials?: boolean;
+
+    /**
+     * Configures the Access-Control-Max-Age CORS header.
+     * Defines how long (in seconds) the results of a preflight request
+     * can be cached by the client.
+     */
+    maxAge?: number;
+
+    /**
+     * Pass the CORS preflight response to the next handler instead of ending the request.
+     * @default false
+     */
+    preflightContinue?: boolean;
+
+    /**
+     * Provides the status code to use for successful OPTIONS (preflight) requests.
+     * Some legacy browsers (e.g. IE11) choke on 204.
+     * @default 204
+     */
+    optionsSuccessStatus?: number;
+  }
 
   /**
    * When set as boolean:
@@ -136,20 +197,7 @@ export interface IApplicationConfig {
      *
      * Requires `swagger-themes` module
      */
-    theme?: "classic"
-      | "dark-monokai"
-      | "dark"
-      | "dracula"
-      | "feeling-blue"
-      | "flattop"
-      | "gruvbox"
-      | "material"
-      | "monokai"
-      | "muted"
-      | "newspaper"
-      | "nord-dark"
-      | "one-dark"
-      | "outline"
+    theme?: SwaggerThemes
   }) | true
 
   /**
@@ -191,7 +239,7 @@ export default class Application<T extends IApplicationConfig> {
 
     if (cors) {
       this.debugLog("Setting up global CORS middleware")
-      app.use(cors())
+      app.use(cors(config?.cors))
     }
     else (config?.logger?.warning || config?.logger?.error)?.("Running the application without CORS. Install the CORS package to automatically enable it")
 

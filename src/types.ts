@@ -39,7 +39,7 @@ export interface ISwaggerTransformerOptions {
   builders: RouterBuilder[]
 
   /** List of security schemas */
-  securitySchemas?: Record<string, SecurityScheme>
+  securitySchemas?: Record<string, SwaggerSecuritySchemes.SecurityScheme>
 }
 
 // Schema definition in configuration
@@ -68,46 +68,85 @@ export type TCreateRouteResponse<
     )
   : (S extends null ? RouterRequestsWithSchema<T> : RouterBuilder<T>)
 
-interface BaseSecurityScheme {
-  description?: string
-}
+export type SwaggerThemes = "classic"
+  | "dark-monokai"
+  | "dark"
+  | "dracula"
+  | "feeling-blue"
+  | "flattop"
+  | "gruvbox"
+  | "material"
+  | "monokai"
+  | "muted"
+  | "newspaper"
+  | "nord-dark"
+  | "one-dark"
+  | "outline"
 
-export interface HttpSecurityScheme extends BaseSecurityScheme {
-  type: "http"
-  scheme: string
-  bearerFormat?: string
-}
-
-export interface ApiKeySecurityScheme extends BaseSecurityScheme {
-  type: "apiKey"
-  in: "query" | "header" | "cookie"
-  name: string;
-}
-
-export interface OAuth2SecurityScheme extends BaseSecurityScheme {
-  type: "oauth2"
-  flows: {
-    implicit?: OAuth2Flow
-    password?: OAuth2Flow
-    clientCredentials?: OAuth2Flow
-    authorizationCode?: OAuth2Flow
+export namespace SwaggerSecuritySchemes {
+  interface BaseSecurityScheme {
+    description?: string
   }
+
+  export interface HttpSecurityScheme extends BaseSecurityScheme {
+    type: "http"
+    scheme: string
+    bearerFormat?: string
+  }
+
+  export interface ApiKeySecurityScheme extends BaseSecurityScheme {
+    type: "apiKey"
+    in: "query" | "header" | "cookie"
+    name: string;
+  }
+
+  export interface OAuth2SecurityScheme extends BaseSecurityScheme {
+    type: "oauth2"
+    flows: {
+      implicit?: OAuth2Flow
+      password?: OAuth2Flow
+      clientCredentials?: OAuth2Flow
+      authorizationCode?: OAuth2Flow
+    }
+  }
+
+  export interface OAuth2Flow {
+    authorizationUrl?: string
+    tokenUrl?: string
+    refreshUrl?: string
+    scopes: Record<string, string>
+  }
+
+  export interface OpenIdSecurityScheme extends BaseSecurityScheme {
+    type: "openIdConnect";
+    openIdConnectUrl: string;
+  }
+
+  export type SecurityScheme =
+    | HttpSecurityScheme
+    | ApiKeySecurityScheme
+    | OAuth2SecurityScheme
+    | OpenIdSecurityScheme
 }
 
-export interface OAuth2Flow {
-  authorizationUrl?: string
-  tokenUrl?: string
-  refreshUrl?: string
-  scopes: Record<string, string>
-}
+export namespace Cors {
+  /**
+   * A static CORS origin definition. Can be:
+   * - `boolean` — `true` to allow any origin, `false` to allow none
+   * - `string` — a single allowed origin
+   * - `RegExp` — a regular expression to match allowed origins
+   * - `Array<boolean | string | RegExp>` — a list of any combination of the above
+   */
+  export type StaticOrigin = boolean | string | RegExp | Array<boolean | string | RegExp>
 
-export interface OpenIdSecurityScheme extends BaseSecurityScheme {
-  type: "openIdConnect";
-  openIdConnectUrl: string;
+  /**
+   * A custom function to dynamically determine the CORS origin
+   *
+   * @param requestOrigin `origin` header value from the incoming request
+   * @param callback a function to call with the result:
+   */
+  export type CustomOrigin = (
+    requestOrigin: string | undefined,
+    callback: (err: Error | null, origin?: StaticOrigin) => void
+  ) => void
 }
-
-export type SecurityScheme =
-  | HttpSecurityScheme
-  | ApiKeySecurityScheme
-  | OAuth2SecurityScheme
-  | OpenIdSecurityScheme
