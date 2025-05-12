@@ -140,7 +140,7 @@ export default class RouterBuilder<T extends Record<any, any> = {}> extends Rout
       logger
     }
 
-    if (this.config.debug && this.config.logger && this.debugLogTail.length > 0) {
+    if (this.buildDebugConfig()?.[1] && this.config.logger && this.debugLogTail.length > 0) {
       this.debugLogTail.forEach(message => this.debugLog(message))
       this.debugLogTail = []
     }
@@ -166,8 +166,8 @@ export default class RouterBuilder<T extends Record<any, any> = {}> extends Rout
   }
 
   private debugLog(...message: string[]) {
-    if (!this.config?.debug || !this.config?.logger) {
-      this.debugLogTail.slice(1)
+    if (!this.buildDebugConfig()?.[1] || !this.config?.logger) {
+      if (this.debugLogTail.length >= 10) this.debugLogTail.slice(1)
       this.debugLogTail.push(message.join(" "))
       return
     }
