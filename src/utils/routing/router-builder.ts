@@ -14,7 +14,7 @@ import { ConstructableMiddleware } from "../middleware/middleware"
 export interface IRouterBuilderConfig<T extends Record<any, any>> {
   middleware?: ConstructableMiddleware<T>
   logger?: TLogger
-  debug?: boolean
+  debug?: IApplicationConfig["debug"]
   tags?: string[]
 }
 
@@ -34,8 +34,9 @@ export default class RouterBuilder<T extends Record<any, any> = {}> extends Rout
   constructor(public readonly root: string, private config?: IRouterBuilderConfig<T>, app?: Application<IApplicationConfig>) {
     const router = Router()
 
-    super(router, () => this.config?.logger && this.config.debug
-      ? [this.config?.logger, this.config?.debug] as [TLogger, boolean] : undefined)
+    super(router, () => this.buildDebugConfig())
+
+    this.buildDebugConfig = this.buildDebugConfig.bind(this)
 
     this.tags = config?.tags
 
@@ -53,7 +54,8 @@ export default class RouterBuilder<T extends Record<any, any> = {}> extends Rout
         this.debugLog("Middleware call:", config.middleware.name, request.method.toUpperCase(), request.path)
         let result: any
 
-        await routerUtils(response, request, config.logger, config.debug).errorBoundary(async () => {
+        const traces = this.config?.debug === true || (typeof config.debug === "object" && config.debug.traces)
+        await routerUtils(response, request, config.logger, traces).errorBoundary(async () => {
           const _result = middleware.onRequest(request, response)
 
           if (_result instanceof Promise) result = await _result
@@ -83,7 +85,7 @@ export default class RouterBuilder<T extends Record<any, any> = {}> extends Rout
    * @internal
    */
   protected registerRouteImpl(path: string, method: RequestMethods, metadata: RouteMetadata | null, schema?: ISchema | null) {
-    this.debugLog("New route registered:", method.toUpperCase(), path)
+    this.debugLog("Route registered", method.toUpperCase(), this.root + path)
 
     const routeRegistered = this.registeredRoutes
       .findIndex(route => route.path.toLowerCase() === path.toLowerCase() && route.method === method)
@@ -118,11 +120,8 @@ export default class RouterBuilder<T extends Record<any, any> = {}> extends Rout
   public schema<S extends TCreateRouteSchema>(schema: S): S extends null ? RouterRequestsWithSchema<T> : (S extends IBodyLessSchema ? RouterRequestsWithSchema<T> : RouterContentRequestsWithSchema<T>) {
     let router: RouterContentRequestsWithSchema<T> | RouterRequestsWithSchema<T>
 
-    const debugConfig = () =>
-      this.config?.logger && this.config.debug ? [this.config?.logger, this.config?.debug] as [TLogger, boolean] : undefined
-
-    if (schema && "body" in schema) router = new RouterContentRequestsWithSchema<T>(this._router, schema, debugConfig)
-    else router = new RouterRequestsWithSchema<T>(this._router, schema as any, debugConfig)
+    if (schema && "body" in schema) router = new RouterContentRequestsWithSchema<T>(this._router, schema, this.buildDebugConfig)
+    else router = new RouterRequestsWithSchema<T>(this._router, schema as any, this.buildDebugConfig)
 
     router.setupRouteRegisterCallback(this.registerRouteImpl)
     return router as any
@@ -138,7 +137,7 @@ export default class RouterBuilder<T extends Record<any, any> = {}> extends Rout
     this.config = {
       debug,
       ...this.config,
-      logger,
+      logger
     }
 
     if (this.config.debug && this.config.logger && this.debugLogTail.length > 0) {
@@ -174,5 +173,16 @@ export default class RouterBuilder<T extends Record<any, any> = {}> extends Rout
     }
 
     (this.config?.logger?.debug || this.config.logger?.info)?.(message.join(" "))
+  }
+
+  private buildDebugConfig() {
+    const logging = typeof this.config?.debug === "object" ? this.config.debug.logs : this.config?.debug
+
+    return this.config?.logger && logging ? [
+      this.config?.logger,
+      logging,
+      this.config.debug === true || (typeof this.config.debug === "object" && this.config.debug.traces)
+    ] as [TLogger, boolean, boolean] : undefined
+
   }
 }

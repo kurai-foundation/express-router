@@ -1,16 +1,16 @@
 import express, { Express } from "express"
 import * as http from "node:http"
 import * as https from "node:https"
-import RouterBuilder from "./utils/routing/router-builder"
-import { TLogger } from "./utils/routing/router-utils"
-import {
-  ICreateRouteOptions,
-  ISwaggerTransformerOptions,
-  TCreateRouteResponse,
-  TCreateRouteSchema
-} from "./types"
+import { ICreateRouteOptions, ISwaggerTransformerOptions, TCreateRouteResponse, TCreateRouteSchema } from "./types"
+import { TLogger } from "./utils"
 import getModule from "./utils/get-module"
+import RouterBuilder from "./utils/routing/router-builder"
 
+/**
+ * Interface for configuring an application. Defines properties and options
+ * to control various aspects of an application's setup, logging, hosting,
+ * middleware configuration, debugging, Swagger integration, and more.
+ */
 export interface IApplicationConfig {
   /**
    * Configuring JSON middleware for applications.
@@ -65,37 +65,99 @@ export interface IApplicationConfig {
   onAppStart?: (host: string, port: number, app: Express) => void | null
 
   /**
-   * Enable debug logs. Works only if logger is specified
+   * When set as boolean:
+   * - Enable or disable debug logs and exception stack traces in the responses.
+   * Logging works only when `logger` specified
+   *
+   * When set as an object:
+   * - `.logs` - enable or disable debug logs. Logging works only when `logger` specified
+   * - `.traces` - enable or disable exception stack traces in the responses
    *
    * @default false
    */
-  debug?: boolean
+  debug?: boolean | {
+    /** Set true to enable request and internal operations logging */
+    logs: boolean
+
+    /** Set true to attach exception stack traces to the responses */
+    traces?: boolean
+  }
 
   /**
    * If true, a root GET route will be automatically
    * added to the application, which will return Swagger UI
    *
-   * If `swagger-ui-express` or `@kurai-io/express-router-swagger` are not installed,
-   * then the default route with `200 OK` response will be served instead
+   * Requires both `swagger-ui-express` and `@kurai-io/express-router-swagger` to serve UI
+   * or just `@kurai-io/express-router-swagger` to serve only JSON specification
    *
    * Object configuration will be counted as true (swagger enabled)
    */
   swagger?: (Omit<ISwaggerTransformerOptions, "builders"> & {
     /**
-     * Swagger UI serve path
+     * Path where Swagger UI will be served
      *
-     * @default root
-     * */
+     * @default /docs
+     */
     path?: string
+
+    /**
+     * Path where the swagger.json file will be served
+     *
+     * When specified, creates an endpoint that serves the OpenAPI/Swagger specification
+     * in JSON format
+     *
+     * Requires `@kurai-io/express-router-swagger` transformer module
+     */
+    jsonFilePath?: string
+
+    /**
+     * Custom title for the Swagger UI page. This will be displayed
+     * in the browser's title bar and as the main heading of the UI
+     *
+     * @default Swagger's default title
+     */
+    title?: string
+
+    /**
+     * URL to a custom favicon for the Swagger UI page.
+     * Must be a valid URL pointing to an image file
+     *
+     * @default Swagger's default favicon
+     */
+    icon?: string
+
+    /**
+     * Swagger UI theme
+     *
+     * Requires `swagger-themes` module
+     */
+    theme?: "classic"
+      | "dark-monokai"
+      | "dark"
+      | "dracula"
+      | "feeling-blue"
+      | "flattop"
+      | "gruvbox"
+      | "material"
+      | "monokai"
+      | "muted"
+      | "newspaper"
+      | "nord-dark"
+      | "one-dark"
+      | "outline"
   }) | true
 
   /**
-   * HTTPS configuration
+   * Secure server configuration
+   *
+   * When set, the internal server will automatically switch into https mode
    */
   https?: https.ServerOptions
 
   /**
-   * If true, http/s server will not be automatically created and started
+   * Completely disable the internal server
+   *
+   * _Use this only if you later attach the application to a custom http server_
    */
   serverless?: boolean
 }
@@ -103,6 +165,11 @@ export interface IApplicationConfig {
 export default class Application<T extends IApplicationConfig> {
   private readonly internalApp: Express
   private readonly internalServer?: http.Server | https.Server
+
+  private swaggerContent?: any
+  private readonly swaggerModule: {
+    swaggerTransformer: (options: ISwaggerTransformerOptions) => any
+  } | null = null
 
   private registeredBuilders: RouterBuilder[] = []
 
@@ -114,7 +181,7 @@ export default class Application<T extends IApplicationConfig> {
   constructor(private readonly config?: T) {
     const app = express()
 
-    // Setup cors if possible
+    // Set up cors if possible
     const cors = getModule("cors")
 
     if (cors) {
@@ -135,6 +202,8 @@ export default class Application<T extends IApplicationConfig> {
     const host = config?.host || process.env.APP_HOST || "127.0.0.1"
 
     if (!config?.serverless) {
+      (config?.logger?.warning)?.("Running application in serverless mode, you should configure http server yourself")
+
       if (config?.https) this.internalServer = https.createServer(config.https, app)
       else this.internalServer = http.createServer(app)
 
@@ -148,40 +217,80 @@ export default class Application<T extends IApplicationConfig> {
       })
     }
 
-    // Generate swagger only after setup
-    setTimeout(() => {
-      if (!config?.swagger) return
+    this.internalApp = app
 
-      const swaggerModule = getModule<{
-        swaggerTransformer: (options: ISwaggerTransformerOptions) => any
-      }>("@kurai-io/express-router-swagger")
+    // Swagger setup
 
-      const swaggerUi = getModule("swagger-ui-express")
+    if (!config?.swagger) return
 
-      if (swaggerUi && swaggerModule?.swaggerTransformer) {
-        const swaggerConfig = {
-          path: "/",
-          ...(typeof this.config?.swagger === "object" ? this.config.swagger : {})
-        }
+    this.swaggerModule = getModule<{
+      swaggerTransformer: (options: ISwaggerTransformerOptions) => any
+    }>("@kurai-io/express-router-swagger")
 
-        this.debugLog("Registering swagger at path GET", swaggerConfig.path || "/")
+    const swaggerUi = getModule("swagger-ui-express")
 
-        app.use(swaggerConfig.path || "/", swaggerUi.serve, swaggerUi.setup(swaggerModule.swaggerTransformer({
-          ...swaggerConfig,
-          builders: this.registeredBuilders
-        })))
+    const swaggerConfig = { path: "/docs", ...(typeof this.config?.swagger === "object" ? this.config.swagger : {}) }
+
+    if (swaggerConfig.jsonFilePath) {
+      if (!this.swaggerModule?.swaggerTransformer) {
+        (config?.logger?.warning || config?.logger?.error)?.("Failed to serve swagger JSON file: transformer module" +
+          " [@kurai-io/express-router-swagger] not found")
 
         return
       }
 
-      this.debugLog("Registering default 200 OK response on path GET /");
-      (config?.logger?.warning || config?.logger?.error)?.("Swagger module or swagger-ui-express not installed, setting up default GET path instead")
-      app.get("/", (_, res) => {
-        res.status(200).send("OK")
+      this.debugLog("Serving swagger JSON file at", swaggerConfig.jsonFilePath)
+
+      app.use(swaggerConfig.jsonFilePath, (_, res) => {
+        res.setHeader("Content-Type", "application/json").status(200).send(JSON.stringify(this.swaggerContent, null, 2)).end()
       })
+    }
+
+    if (!swaggerUi || !this.swaggerModule?.swaggerTransformer) {
+      const missingModules: string[] = []
+      if (!swaggerUi) missingModules.push("swagger-ui-express")
+      if (!this.swaggerModule?.swaggerTransformer) {
+        missingModules.push("@kurai-io/express-router-swagger")
+      }
+
+      (config?.logger?.warning || config?.logger?.error)?.("Swagger UI not available due to one or both required modules not" +
+        " found: " + missingModules.join(", "))
+      return
+    }
+
+    const swaggerUISetupOptions: Record<string, any> = { swaggerOptions: {} }
+    if (swaggerConfig.theme) {
+      const themeModule = getModule<{ SwaggerTheme: new () => any }>("swagger-themes")
+
+      if (themeModule) {
+        const theme = new themeModule.SwaggerTheme()
+        swaggerUISetupOptions.customCss = theme.getBuffer(swaggerConfig.theme)
+      }
+      else (config?.logger?.warning || config?.logger?.error)?.("Unable to set up swagger UI theme due to missing swagger-themes module")
+    }
+
+    if (swaggerConfig.jsonFilePath) swaggerUISetupOptions.swaggerOptions.urls = [
+      { url: swaggerConfig.jsonFilePath, name: "Swagger JSON file" }
+    ]
+
+    this.debugLog("Serving swagger at", swaggerConfig.path)
+    app.use(swaggerConfig.path, swaggerUi.serve, (...args) => {
+      swaggerUi.setup(this.swaggerContent, swaggerUISetupOptions)(...args)
     })
 
-    this.internalApp = app
+    this.updateSwaggerDefinition()
+  }
+
+  private updateSwaggerDefinition() {
+    if (!this.swaggerModule) return
+    const swaggerConfig = { path: "/docs", ...(typeof this.config?.swagger === "object" ? this.config.swagger : {}) }
+
+    setTimeout(() => {
+      this.swaggerContent = this.swaggerModule?.swaggerTransformer({
+        ...swaggerConfig,
+        builders: this.registeredBuilders
+      })
+    })
   }
 
   /**
@@ -197,14 +306,14 @@ export default class Application<T extends IApplicationConfig> {
     const builder = new RouterBuilder<T>(root, {
       ...builderConfig,
       logger: this.config?.logger,
-      debug: this.config?.debug
+      debug: this.getDebugState()
     }, this)
 
     this.injectBuilder(builder)
 
     const router = schema !== undefined ? builder.schema(schema) : builder
 
-    this.debugLog("Route created:", options.root)
+    this.debugLog("Router builder created for route", builder.root)
 
     return router as any
   }
@@ -219,9 +328,11 @@ export default class Application<T extends IApplicationConfig> {
       this.registeredBuilders.push(builder)
     }
 
-    if (this.config?.logger) builder.attachLogger(this.config?.logger, this.config.debug)
+    if (this.config?.logger) builder.attachLogger(this.config?.logger, this.getDebugState())
 
     this.internalApp.use(builder.root, builder.router)
+
+    this.updateSwaggerDefinition()
   }
 
   /**
@@ -229,6 +340,10 @@ export default class Application<T extends IApplicationConfig> {
    */
   public get express() {
     return this.internalApp
+  }
+
+  public afterInstall(callback: (app: this) => any) {
+    callback?.(this)
   }
 
   public httpServer(): T extends undefined ? http.Server : T["serverless"] extends true ? undefined : (T["https"] extends https.ServerOptions ? https.Server : http.Server) {
@@ -239,5 +354,9 @@ export default class Application<T extends IApplicationConfig> {
     if (!this.config?.debug) return
 
     (this.config?.logger?.debug || this.config.logger?.info)?.(message.join(" "))
+  }
+
+  private getDebugState() {
+    return typeof this.config?.debug === "object" ? this.config.debug.logs : this.config?.debug
   }
 }

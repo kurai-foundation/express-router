@@ -12,7 +12,7 @@ export default class RouterRequestsWithoutSchema<Attachments extends Record<any,
    *
    * @internal
    */
-  constructor(protected readonly _router: Router, debugConfig?: () => [TLogger, boolean] | undefined) {
+  constructor(protected readonly _router: Router, debugConfig?: () => [TLogger, boolean, boolean] | undefined) {
     super(_router, debugConfig)
   }
 

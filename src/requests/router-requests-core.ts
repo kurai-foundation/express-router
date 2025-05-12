@@ -34,8 +34,7 @@ export type TRegisterRouteCallback = (path: string, method: RequestMethods, meta
 export class RouterRequestsCore<Attachments extends Record<any, any> = {}> {
   protected registerRoute: TRegisterRouteCallback | null = null
 
-  constructor(protected readonly _router: Router, private readonly debugConfig?: () => [TLogger, boolean] | undefined) {
-  }
+  constructor(protected readonly _router: Router, private readonly debugConfig?: () => [TLogger, boolean, boolean] | undefined) {}
 
   public setupRouteRegisterCallback(registerRoute: TRegisterRouteCallback) {
     this.registerRoute = registerRoute
@@ -82,7 +81,7 @@ export class RouterRequestsCore<Attachments extends Record<any, any> = {}> {
         ])
       )
       let resultCode = 200
-      await routerUtils(res, req, debug?.[0], debug?.[1])
+      await routerUtils(res, req, debug?.[0], debug?.[2])
         .schema(schema, code => resultCode = code)
         .errorBoundary(async self => {
           const result = await callback(req as any, c as any)
