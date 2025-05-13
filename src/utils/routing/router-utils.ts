@@ -3,6 +3,8 @@ import { SendFileOptions } from "express-serve-static-core"
 import Joi from "joi"
 import Exception from "../../responses/exception"
 import { BadRequest } from "../../exceptions"
+import sendLog from "../send-log"
+import { IApplicationDebugConfigWithLogger } from "./router-builder"
 
 /** Schema without body */
 export interface IBodyLessSchema<T extends Joi.AnySchema = Joi.AnySchema> {
@@ -26,11 +28,10 @@ export type TLogger<T = TLoggerFnType> = { error: T, warning?: T, info: T, debug
  *
  * @param res express response
  * @param req express request
- * @param logger optional logger instance
- * @param stack enable stack trace in response exceptions
+ * @param debug debug config
  * @internal
  */
-export function routerUtils<Res extends Response, Req extends Request>(res: Res, req?: Req, logger?: TLogger, stack = false) {
+export function routerUtils<Res extends Response, Req extends Request>(res: Res, req?: Req, debug?: IApplicationDebugConfigWithLogger) {
   let responseSent = false
 
   const validateSchema = (schema: ISchema, type: keyof ISchema) => {
@@ -155,7 +156,7 @@ export function routerUtils<Res extends Response, Req extends Request>(res: Res,
         message: exception.message
       }
 
-      if (stack) content.stack = exception.stack
+      if (debug?.traces) content.stack = exception.stack
 
       sendJSONRaw({
         error: exception.name,
@@ -179,7 +180,12 @@ export function routerUtils<Res extends Response, Req extends Request>(res: Res,
         validateSchema(schema, "headers")
       ].filter(error => error !== null) as string[]
 
-      if (!req && schema) (logger?.warning ?? logger?.error)?.("Schema has been applied but no request data provided")
+      sendLog(debug, {
+        levels: ["warning"],
+        message: "Schema has been applied but no request data provided",
+        condition: !req && schema,
+        module: "builder"
+      })
 
       if (validationErrors.length > 0) {
         this.sendException(new BadRequest(validationErrors.join(", ")))
@@ -195,18 +201,24 @@ export function routerUtils<Res extends Response, Req extends Request>(res: Res,
      * @param exec model
      * @param onError error callback
      */
-    async errorBoundary<T extends (self: typeof this) => unknown>(exec: T, onError?: (message: string, code: number) => void) {
+    async errorBoundary<T extends (self: typeof this) => unknown>(exec: T, onError?: (name: string, message: string, code: number) => void) {
       if (responseSent) return this
       try {
         await exec(this)
       }
       catch (error: any) {
         const message = (error?.name ?? "UnknownError") + ": " + (error?.message ?? "No details")
-        if (error?.name === "Error") logger?.error(message)
+
+        sendLog(debug, {
+          levels: ["error"],
+          message,
+          condition: error?.name === "Error",
+          module: "builder"
+        })
 
         const exception = Exception.fromError(error)
 
-        onError?.(message, exception.code)
+        onError?.(error?.name ?? "UnknownError", error?.message ?? "Unknown error occurred", exception.code)
         this.sendException(exception)
       }
 

@@ -11,11 +11,12 @@ export class RouterContentRequestsWithSchema<Attachments extends Record<any, any
    * @internal
    *
    * @param _router express router instance
+   * @param base requests base
    * @param schema inherited schema
    * @param debugConfig debug logging configuration
    */
-  constructor(protected readonly _router: Router, protected readonly schema: ISchema | null, debugConfig?: () => IApplicationDebugConfigWithLogger) {
-    super(_router, debugConfig)
+  constructor(protected readonly _router: Router, base: string, protected readonly schema: ISchema | null, debugConfig?: () => IApplicationDebugConfigWithLogger) {
+    super(_router, base, debugConfig)
   }
 
   /**
@@ -100,13 +101,14 @@ export class RouterRequestsWithSchema<Attachments extends Record<any, any> = {}>
    * Predefined HTTP requests (that cannot contain body) with predefined by parent schema
    *
    * @param _router express router instance
+   * @param base requests base
    * @param schema inherited schema
    * @param debugConfig debug logging configuration
    *
    * @internal
    */
-  constructor(protected readonly _router: Router, schema: ISchema | null, debugConfig?: () => IApplicationDebugConfigWithLogger) {
-    super(_router, schema, debugConfig)
+  constructor(protected readonly _router: Router, base: string, schema: ISchema | null, debugConfig?: () => IApplicationDebugConfigWithLogger) {
+    super(_router, base, schema, debugConfig)
   }
 
   /**

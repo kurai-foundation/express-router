@@ -8,6 +8,7 @@ import { ISchema, routerUtils } from "../utils/routing/router-utils"
 import { RouteParameters } from "express-serve-static-core"
 import Exception from "../responses/exception"
 import CustomResponse, { ICustomResponseOptions, ResponseFactory } from "../responses/custom-response"
+import sendLog from "../utils/send-log"
 
 export type RequestMethods = "get" | "post" | "put" | "delete" | "options" | "patch" | "head"
 
@@ -38,7 +39,7 @@ const colorsModule = getModule("colors")
 export class RouterRequestsCore<Attachments extends Record<any, any> = {}> {
   protected registerRoute: TRegisterRouteCallback | null = null
 
-  constructor(protected readonly _router: Router, private readonly debugConfig?: () => IApplicationDebugConfigWithLogger) {}
+  constructor(protected readonly _router: Router, private readonly base: string, private readonly debugConfig?: () => IApplicationDebugConfigWithLogger) {}
 
   public setupRouteRegisterCallback(registerRoute: TRegisterRouteCallback) {
     this.registerRoute = registerRoute
@@ -72,6 +73,8 @@ export class RouterRequestsCore<Attachments extends Record<any, any> = {}> {
 
     if (!routeLink) throw new Error("No route registration implementation found")
 
+    let executeOnLog: Function | null = null
+
     this._router[method](path, async (req, res) => {
       const debug = this.debugConfig?.()
       const startTime = performance.now()
@@ -85,7 +88,7 @@ export class RouterRequestsCore<Attachments extends Record<any, any> = {}> {
         ])
       )
       let resultCode = 200
-      await routerUtils(res, req, debug?.logger, debug?.traces)
+      await routerUtils(res, req, debug)
         .schema(schema, code => resultCode = code)
         .errorBoundary(async self => {
           const result = await callback(req as any, c as any)
@@ -112,26 +115,33 @@ export class RouterRequestsCore<Attachments extends Record<any, any> = {}> {
           if (result instanceof FileResponse) self.sendFile(result.path, result.options)
 
           self.sendJSON(result)
-        }, (message, code) => {
+        }, (name, message, code) => {
+          if (debug?.routeExceptions && code >= 500) executeOnLog = () => {
+            colorsModule.enable()
+            const messageText = colorsModule && !debug.json ? colorsModule.dim(`${ name }: ${ message }`) : `${ name }: ${ message }`
 
-          if (debug?.routeExceptions && code >= 500) {
-            if (!colorsModule) console.error(`    ${ message }`)
-            else {
-              (debug.logger?.debug || debug.logger?.info)?.(`    ${ colorsModule.dim(message) }`)
-            }
+            sendLog(debug, {
+              message: colorsModule ? ` ${ colorsModule.dim("->") } ${ messageText }` : messageText,
+              json: { name, message },
+              levels: ["error"],
+              module: "router"
+            })
+
+            colorsModule.disable()
           }
 
           resultCode = code
         })
 
       const execTime = Math.round((performance.now() - startTime) * 1000) / 1000
-      if (debug?.logger && debug.logs) {
-        const fn = resultCode >= 500
-          ? (debug.logger?.error || debug.logger?.warning)
-          : (debug.logger?.debug || debug.logger?.info)
+      sendLog(debug, {
+        levels: [resultCode >= 500 ? "error" : "info"],
+        message: `${ method.toUpperCase() } ${ this.base + path } - ${ resultCode } - ${ execTime }ms`,
+        json: { method: method.toUpperCase(), path: this.base + path, code: resultCode, time: execTime },
+        module: "requests"
+      })
 
-        fn?.(`${ method.toUpperCase() } ${ path } - ${ resultCode } - ${ execTime }ms`)
-      }
+      executeOnLog?.()
     })
 
     return {

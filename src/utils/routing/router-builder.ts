@@ -1,4 +1,6 @@
 import { Router } from "express"
+import createFullDebugConfig from "../create-full-debug-config"
+import sendLog, { ILogOptions } from "../send-log"
 import { IBodyLessSchema, ISchema, routerUtils, TLogger } from "./router-utils"
 import RouterRequestsWithoutSchema from "../../requests/router-requests-without-schema"
 import {
@@ -33,17 +35,22 @@ export default class RouterBuilder<T extends Record<any, any> = {}> extends Rout
   protected registeredRoutes: IRegisteredRoute[] = []
   public readonly symbol = Symbol()
   public readonly tags?: string[]
-  private debugLogTail: string[] = []
+  private debugLogTail: ILogOptions[] = []
 
   constructor(public readonly root: string, private config?: IRouterBuilderConfig<T>, app?: Application<IApplicationConfig>) {
     const router = Router()
 
-    super(router, () => this.fullDebugConfig)
+    super(router, root, () => this.fullDebugConfig)
 
     this.tags = config?.tags
 
     if (config?.middleware) {
-      this.debugLog("Setting up middleware:", config.middleware.name)
+      sendLog(this.fullDebugConfig, {
+        levels: ["info"],
+        message: ["Setting up middleware: ", config.middleware.name],
+        json: { milestone: "middleware", ok: true, name: config.middleware.name },
+        module: "builder"
+      })
 
       const middleware = new config.middleware()
 
@@ -53,11 +60,17 @@ export default class RouterBuilder<T extends Record<any, any> = {}> extends Rout
       router.use(async (request, response, next) => {
         if (!config.middleware) return next()
 
-        if (this.fullDebugConfig.middleware)
-          this.debugLog("Middleware call:", config.middleware.name, request.method.toUpperCase(), request.path)
+        sendLog(this.fullDebugConfig, {
+          levels: ["info"],
+          message: ["Middleware call:", config.middleware.name, request.method.toUpperCase(), this.root + request.path],
+          json: { name: config.middleware.name, method: request.method.toUpperCase(), path: this.root + request.path },
+          module: "middleware",
+          condition: this.fullDebugConfig.middleware
+        })
+
         let result: any
 
-        await routerUtils(response, request, config.logger, this.fullDebugConfig.traces).errorBoundary(async () => {
+        await routerUtils(response, request, this.fullDebugConfig).errorBoundary(async () => {
           const _result = middleware.onRequest(request, response)
 
           if (_result instanceof Promise) result = await _result
@@ -87,7 +100,12 @@ export default class RouterBuilder<T extends Record<any, any> = {}> extends Rout
    * @internal
    */
   protected registerRouteImpl(path: string, method: RequestMethods, metadata: RouteMetadata | null, schema?: ISchema | null) {
-    this.debugLog("Route registered", method.toUpperCase(), this.root + path)
+    sendLog(this.fullDebugConfig, {
+      levels: ["info"],
+      message: ["Route registered", method.toUpperCase(), this.root + path],
+      json: { milestone: "route", method: method.toUpperCase(), path: this.root + path },
+      module: "builder"
+    })
 
     const routeRegistered = this.registeredRoutes
       .findIndex(route => route.path.toLowerCase() === path.toLowerCase() && route.method === method)
@@ -122,8 +140,8 @@ export default class RouterBuilder<T extends Record<any, any> = {}> extends Rout
   public schema<S extends TCreateRouteSchema>(schema: S): S extends null ? RouterRequestsWithSchema<T> : (S extends IBodyLessSchema ? RouterRequestsWithSchema<T> : RouterContentRequestsWithSchema<T>) {
     let router: RouterContentRequestsWithSchema<T> | RouterRequestsWithSchema<T>
 
-    if (schema && "body" in schema) router = new RouterContentRequestsWithSchema<T>(this._router, schema, () => this.fullDebugConfig)
-    else router = new RouterRequestsWithSchema<T>(this._router, schema as any, () => this.fullDebugConfig)
+    if (schema && "body" in schema) router = new RouterContentRequestsWithSchema<T>(this._router, this.root, schema, () => this.fullDebugConfig)
+    else router = new RouterRequestsWithSchema<T>(this._router, this.root, schema as any, () => this.fullDebugConfig)
 
     router.setupRouteRegisterCallback(this.registerRouteImpl)
     return router as any
@@ -143,7 +161,7 @@ export default class RouterBuilder<T extends Record<any, any> = {}> extends Rout
     }
 
     if (this.fullDebugConfig.logs && this.config.logger && this.debugLogTail.length > 0) {
-      this.debugLogTail.forEach(message => this.debugLog(message))
+      this.debugLogTail.forEach(message => sendLog(this.fullDebugConfig, message))
       this.debugLogTail = []
     }
   }
@@ -167,31 +185,7 @@ export default class RouterBuilder<T extends Record<any, any> = {}> extends Rout
     })
   }
 
-  private debugLog(...message: string[]) {
-    if (!this.fullDebugConfig.logs || !this.config?.logger) {
-      if (this.debugLogTail.length >= 10) this.debugLogTail.slice(1)
-      this.debugLogTail.push(message.join(" "))
-      return
-    }
-
-    (this.config?.logger?.debug || this.config.logger?.info)?.(message.join(" "))
-  }
-
   private get fullDebugConfig(): IApplicationDebugConfigWithLogger {
-    if (!this.config?.debug || typeof this.config.debug === "boolean") return {
-      logger: this.config?.logger,
-      logs: !!this.config?.debug,
-      middleware: !!this.config?.debug,
-      routeExceptions: !!this.config?.debug,
-      traces: !!this.config?.debug
-    }
-
-    return {
-      logger: this.config.logger,
-      logs: this.config.debug.logs,
-      traces: this.config.debug.traces ?? false,
-      routeExceptions: this.config.debug.routeExceptions ?? true,
-      middleware: this.config.debug.middleware ?? false
-    }
+    return createFullDebugConfig(this.config?.debug, this.config?.logger)
   }
 }

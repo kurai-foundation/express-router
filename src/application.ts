@@ -3,8 +3,10 @@ import * as http from "node:http"
 import * as https from "node:https"
 import { Cors, ICreateRouteOptions, ISwaggerTransformerOptions, SwaggerThemes, TCreateRouteResponse, TCreateRouteSchema } from "./types"
 import { TLogger } from "./utils"
+import createFullDebugConfig from "./utils/create-full-debug-config"
 import getModule from "./utils/get-module"
 import RouterBuilder from "./utils/routing/router-builder"
+import sendLog from "./utils/send-log"
 
 export interface IApplicationDebugConfig {
   /** Set true to enable request and internal operations logging */
@@ -30,6 +32,13 @@ export interface IApplicationDebugConfig {
    * @default true
    */
   routeExceptions?: boolean
+
+  /**
+   * Switch logs into json mode
+   *
+   * @default false
+   */
+  json?: boolean
 }
 
 /**
@@ -254,14 +263,29 @@ export default class Application<T extends IApplicationConfig> {
   constructor(private readonly config?: T) {
     const app = express()
 
+    const fullDebugConfig = createFullDebugConfig(config?.debug, config?.logger)
+
     // Set up cors if possible
     const cors = getModule("cors")
 
     if (cors) {
-      this.debugLog("Setting up global CORS middleware")
+      sendLog(fullDebugConfig, {
+        levels: ["info"],
+        message: "Setting up global CORS middleware",
+        json: { milestone: "module", ok: true, modules: ["cors"] },
+        module: "application",
+      })
+
       app.use(cors(config?.cors))
     }
-    else (config?.logger?.warning || config?.logger?.error)?.("Running the application without CORS. Install the CORS package to automatically enable it")
+
+    sendLog(fullDebugConfig, {
+      levels: ["warning"],
+      message: "Running the application without CORS. Install the CORS package to automatically enable it",
+      json: { milestone: "module", ok: false, modules: ["cors"] },
+      condition: !cors,
+      module: "application"
+    })
 
     // Setup JSON middleware
     if (!config || config.json !== false) {
@@ -284,12 +308,21 @@ export default class Application<T extends IApplicationConfig> {
           return
         }
 
-        if (config?.onAppStart !== null) config?.logger?.info(`Application running on host ${ host } and port ${ port }`)
+        sendLog(fullDebugConfig, {
+          message: `Application running on host ${ host } and port ${ port }`,
+          json: { milestone: "server", ok: true, serverless: false, host, port },
+          levels: ["info"],
+          module: "application"
+        })
       })
     }
     else {
-      (config?.logger?.warning || (config?.logger as any)?.warn)?.("Running application in serverless mode, you should configure http" +
-        " server yourself")
+      sendLog(fullDebugConfig, {
+        levels: ["warning"],
+        message: "Running application in serverless mode, you should configure http server yourself",
+        json: { milestone: "server", ok: true, serverless: true },
+        module: "application"
+      })
     }
 
     this.internalApp = app
@@ -308,13 +341,22 @@ export default class Application<T extends IApplicationConfig> {
 
     if (swaggerConfig.jsonFilePath) {
       if (!this.swaggerModule?.swaggerTransformer) {
-        (config?.logger?.warning || config?.logger?.error)?.("Failed to serve swagger JSON file: transformer module" +
-          " [@kurai-io/express-router-swagger] not found")
+        sendLog(fullDebugConfig, {
+          levels: ["warning", "error"],
+          message: "Failed to serve swagger JSON file: transformer module @kurai-io/express-router-swagger not found",
+          json: { milestone: "module", ok: false, modules: ["@kurai-io/express-router-swagger"] },
+          module: "application"
+        })
 
         return
       }
 
-      this.debugLog("Serving swagger JSON file at", swaggerConfig.jsonFilePath)
+      sendLog(fullDebugConfig, {
+        levels: ["info"],
+        message: "Serving swagger JSON file at " + swaggerConfig.jsonFilePath,
+        json: { milestone: "swagger", type: "json", ok: true, path: swaggerConfig.jsonFilePath },
+        module: "application",
+      })
 
       app.use(swaggerConfig.jsonFilePath, (_, res) => {
         res.setHeader("Content-Type", "application/json").status(200).send(JSON.stringify(this.swaggerContent, null, 2)).end()
@@ -328,8 +370,13 @@ export default class Application<T extends IApplicationConfig> {
         missingModules.push("@kurai-io/express-router-swagger")
       }
 
-      (config?.logger?.warning || config?.logger?.error)?.("Swagger UI not available due to one or both required modules not" +
-        " found: " + missingModules.join(", "))
+      sendLog(fullDebugConfig, {
+        levels: ["warning", "error"],
+        message: "Swagger UI not available due to one or both required modules not found: " + missingModules.join(", "),
+        json: { milestone: "module", ok: false, modules: missingModules },
+        module: "application",
+      })
+
       return
     }
 
@@ -344,14 +391,27 @@ export default class Application<T extends IApplicationConfig> {
         const theme = new themeModule.SwaggerTheme()
         swaggerUISetupOptions.customCss = theme.getBuffer(swaggerConfig.theme)
       }
-      else (config?.logger?.warning || config?.logger?.error)?.("Unable to set up swagger UI theme due to missing swagger-themes module")
+
+      sendLog(fullDebugConfig, {
+        levels: ["warning", "error"],
+        message: "Unable to set up swagger UI theme due to missing swagger-themes module",
+        json: { milestone: "module", ok: false, modules: ["swagger-themes"] },
+        module: "application",
+        condition: !themeModule
+      })
     }
 
     if (swaggerConfig.jsonFilePath) swaggerUISetupOptions.swaggerOptions.urls = [
       { url: swaggerConfig.jsonFilePath, name: "Swagger JSON file" }
     ]
 
-    this.debugLog("Serving swagger at", swaggerConfig.path)
+    sendLog(fullDebugConfig, {
+      levels: ["info"],
+      message: "Serving swagger at " + swaggerConfig.path,
+      json: { milestone: "swagger", type: "ui", ok: true, path: swaggerConfig.path },
+      module: "application",
+    })
+
     app.use(swaggerConfig.path, swaggerUi.serve, (...args) => {
       swaggerUi.setup(this.swaggerContent, swaggerUISetupOptions)(...args)
     })
@@ -391,7 +451,12 @@ export default class Application<T extends IApplicationConfig> {
 
     const router = schema !== undefined ? builder.schema(schema) : builder
 
-    this.debugLog("Router builder created for route", builder.root)
+    sendLog(createFullDebugConfig(this.config?.debug, this.config?.logger), {
+      levels: ["info"],
+      message: "Router builder created for route " + builder.root,
+      json: { milestone: "builder", root: builder.root },
+      module: "application"
+    })
 
     return router as any
   }
@@ -422,11 +487,5 @@ export default class Application<T extends IApplicationConfig> {
 
   public httpServer(): T extends undefined ? http.Server : T["serverless"] extends true ? undefined : (T["https"] extends https.ServerOptions ? https.Server : http.Server) {
     return this.internalServer as any
-  }
-
-  private debugLog(...message: string[]) {
-    if (!this.config?.debug) return
-
-    (this.config?.logger?.debug || this.config.logger?.info)?.(message.join(" "))
   }
 }

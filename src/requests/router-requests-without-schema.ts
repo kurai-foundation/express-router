@@ -9,12 +9,13 @@ export default class RouterRequestsWithoutSchema<Attachments extends Record<any,
    * Predefined HTTP requests
    *
    * @param _router express router instance
+   * @param base requests base
    * @param debugConfig debug logging configuration
    *
    * @internal
    */
-  constructor(protected readonly _router: Router, debugConfig?: () => IApplicationDebugConfigWithLogger) {
-    super(_router, debugConfig)
+  constructor(protected readonly _router: Router, base: string, debugConfig?: () => IApplicationDebugConfigWithLogger) {
+    super(_router, base, debugConfig)
   }
 
   /**
