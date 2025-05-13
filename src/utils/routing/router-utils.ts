@@ -35,7 +35,7 @@ export function routerUtils<Res extends Response, Req extends Request>(res: Res,
   let responseSent = false
 
   const validateSchema = (schema: ISchema, type: keyof ISchema) => {
-
+    if (schema[type] && !req?.[type]) return "Invalid request content"
     if (req?.[type] && schema[type]) {
       const result = schema[type]?.validate(req[type])
       if (!result) return null
