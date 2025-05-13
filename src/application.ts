@@ -6,6 +6,32 @@ import { TLogger } from "./utils"
 import getModule from "./utils/get-module"
 import RouterBuilder from "./utils/routing/router-builder"
 
+export interface IApplicationDebugConfig {
+  /** Set true to enable request and internal operations logging */
+  logs: boolean
+
+  /**
+   * Set true to attach exception stack traces to the responses
+   *
+   * @default false
+   */
+  traces?: boolean
+
+  /**
+   * Set true to enable middleware call traces
+   *
+   * @default false
+   */
+  middleware?: boolean
+
+  /**
+   * Set false to disable logging of route exception
+   *
+   * @default true
+   */
+  routeExceptions?: boolean
+}
+
 /**
  * Interface for configuring an application. Defines properties and options
  * to control various aspects of an application's setup, logging, hosting,
@@ -136,13 +162,7 @@ export interface IApplicationConfig {
    *
    * @default false
    */
-  debug?: boolean | {
-    /** Set true to enable request and internal operations logging */
-    logs: boolean
-
-    /** Set true to attach exception stack traces to the responses */
-    traces?: boolean
-  }
+  debug?: boolean | IApplicationDebugConfig
 
   /**
    * If true, a root GET route will be automatically

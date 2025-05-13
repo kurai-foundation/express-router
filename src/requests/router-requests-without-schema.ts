@@ -1,6 +1,7 @@
 import { Router } from "express"
 import { ICustomResponseOptions } from "../responses/custom-response"
-import { ISchema, TLogger } from "../utils/routing/router-utils"
+import { IApplicationDebugConfigWithLogger } from "../utils/routing/router-builder"
+import { ISchema } from "../utils/routing/router-utils"
 import { ParsedQs, ReqCallback, RouterRequestsCore } from "./router-requests-core"
 
 export default class RouterRequestsWithoutSchema<Attachments extends Record<any, any> = {}> extends RouterRequestsCore<Attachments> {
@@ -12,7 +13,7 @@ export default class RouterRequestsWithoutSchema<Attachments extends Record<any,
    *
    * @internal
    */
-  constructor(protected readonly _router: Router, debugConfig?: () => [TLogger, boolean, boolean] | undefined) {
+  constructor(protected readonly _router: Router, debugConfig?: () => IApplicationDebugConfigWithLogger) {
     super(_router, debugConfig)
   }
 

@@ -195,17 +195,18 @@ export function routerUtils<Res extends Response, Req extends Request>(res: Res,
      * @param exec model
      * @param onError error callback
      */
-    async errorBoundary<T extends (self: typeof this) => unknown>(exec: T, onError?: (code: number) => void) {
+    async errorBoundary<T extends (self: typeof this) => unknown>(exec: T, onError?: (message: string, code: number) => void) {
       if (responseSent) return this
       try {
         await exec(this)
       }
       catch (error: any) {
-        if (error?.name === "Error") logger?.error((error?.name ?? "UnknownError") + ": " + (error?.message ?? "No details"))
+        const message = (error?.name ?? "UnknownError") + ": " + (error?.message ?? "No details")
+        if (error?.name === "Error") logger?.error(message)
 
         const exception = Exception.fromError(error)
 
-        onError?.(exception.code)
+        onError?.(message, exception.code)
         this.sendException(exception)
       }
 

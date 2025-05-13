@@ -1,6 +1,7 @@
 import { Router } from "express"
 import { ICustomResponseOptions } from "../responses/custom-response"
-import { ISchema, TLogger } from "../utils/routing/router-utils"
+import { IApplicationDebugConfigWithLogger } from "../utils/routing/router-builder"
+import { ISchema } from "../utils/routing/router-utils"
 import { ParsedQs, ReqCallback, RouterRequestsCore } from "./router-requests-core"
 
 export class RouterContentRequestsWithSchema<Attachments extends Record<any, any> = {}> extends RouterRequestsCore<Attachments> {
@@ -13,7 +14,7 @@ export class RouterContentRequestsWithSchema<Attachments extends Record<any, any
    * @param schema inherited schema
    * @param debugConfig debug logging configuration
    */
-  constructor(protected readonly _router: Router, protected readonly schema: ISchema | null, debugConfig?: () => [TLogger, boolean, boolean] | undefined) {
+  constructor(protected readonly _router: Router, protected readonly schema: ISchema | null, debugConfig?: () => IApplicationDebugConfigWithLogger) {
     super(_router, debugConfig)
   }
 
@@ -104,7 +105,7 @@ export class RouterRequestsWithSchema<Attachments extends Record<any, any> = {}>
    *
    * @internal
    */
-  constructor(protected readonly _router: Router, schema: ISchema | null, debugConfig?: () => [TLogger, boolean, boolean] | undefined) {
+  constructor(protected readonly _router: Router, schema: ISchema | null, debugConfig?: () => IApplicationDebugConfigWithLogger) {
     super(_router, schema, debugConfig)
   }
 

@@ -2,7 +2,8 @@ import { Request, Router } from "express"
 import FileResponse from "../responses/file-response"
 import Redirect from "../responses/redirect"
 import { IRegisteredRoute } from "../utils"
-import { ISchema, routerUtils, TLogger } from "../utils/routing/router-utils"
+import { IApplicationDebugConfigWithLogger } from "../utils/routing/router-builder"
+import { ISchema, routerUtils } from "../utils/routing/router-utils"
 import { RouteParameters } from "express-serve-static-core"
 import Exception from "../responses/exception"
 import CustomResponse, { ICustomResponseOptions, ResponseFactory } from "../responses/custom-response"
@@ -34,7 +35,7 @@ export type TRegisterRouteCallback = (path: string, method: RequestMethods, meta
 export class RouterRequestsCore<Attachments extends Record<any, any> = {}> {
   protected registerRoute: TRegisterRouteCallback | null = null
 
-  constructor(protected readonly _router: Router, private readonly debugConfig?: () => [TLogger, boolean, boolean] | undefined) {}
+  constructor(protected readonly _router: Router, private readonly debugConfig?: () => IApplicationDebugConfigWithLogger) {}
 
   public setupRouteRegisterCallback(registerRoute: TRegisterRouteCallback) {
     this.registerRoute = registerRoute
@@ -81,7 +82,7 @@ export class RouterRequestsCore<Attachments extends Record<any, any> = {}> {
         ])
       )
       let resultCode = 200
-      await routerUtils(res, req, debug?.[0], debug?.[2])
+      await routerUtils(res, req, debug?.logger, debug?.traces)
         .schema(schema, code => resultCode = code)
         .errorBoundary(async self => {
           const result = await callback(req as any, c as any)
@@ -108,11 +109,19 @@ export class RouterRequestsCore<Attachments extends Record<any, any> = {}> {
           if (result instanceof FileResponse) self.sendFile(result.path, result.options)
 
           self.sendJSON(result)
-        }, code => resultCode = code)
+        }, (message, code) => {
+          if (debug?.routeExceptions && resultCode >= 500) console.error(message)
+
+          resultCode = code
+        })
 
       const execTime = Math.round((performance.now() - startTime) * 1000) / 1000
-      if (debug?.[0] && debug?.[1]) {
-        (debug?.[0]?.debug || debug?.[0]?.info)?.(`${ method.toUpperCase() } ${ path } - ${ resultCode } - ${ execTime }ms`)
+      if (debug?.logger && debug.logs) {
+        const fn = resultCode >= 500
+          ? (debug.logger?.error || debug.logger?.warning)
+          : (debug.logger?.debug || debug.logger?.info)
+
+        fn?.(`${ method.toUpperCase() } ${ path } - ${ resultCode } - ${ execTime }ms`)
       }
     })
 

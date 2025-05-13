@@ -8,8 +8,12 @@ import {
 import { RequestMethods, RouteMetadata } from "../../requests/router-requests-core"
 import { TCreateRouteSchema } from "../../types"
 import { InternalServerError } from "../../exceptions"
-import Application, { IApplicationConfig } from "../../application"
+import Application, { IApplicationConfig, IApplicationDebugConfig } from "../../application"
 import { ConstructableMiddleware } from "../middleware/middleware"
+
+export interface IApplicationDebugConfigWithLogger extends IApplicationDebugConfig {
+  logger?: TLogger
+}
 
 export interface IRouterBuilderConfig<T extends Record<any, any>> {
   middleware?: ConstructableMiddleware<T>
@@ -34,9 +38,7 @@ export default class RouterBuilder<T extends Record<any, any> = {}> extends Rout
   constructor(public readonly root: string, private config?: IRouterBuilderConfig<T>, app?: Application<IApplicationConfig>) {
     const router = Router()
 
-    super(router, () => this.buildDebugConfig())
-
-    this.buildDebugConfig = this.buildDebugConfig.bind(this)
+    super(router, () => this.fullDebugConfig)
 
     this.tags = config?.tags
 
@@ -51,11 +53,11 @@ export default class RouterBuilder<T extends Record<any, any> = {}> extends Rout
       router.use(async (request, response, next) => {
         if (!config.middleware) return next()
 
-        this.debugLog("Middleware call:", config.middleware.name, request.method.toUpperCase(), request.path)
+        if (this.fullDebugConfig.middleware)
+          this.debugLog("Middleware call:", config.middleware.name, request.method.toUpperCase(), request.path)
         let result: any
 
-        const traces = this.config?.debug === true || (typeof config.debug === "object" && config.debug.traces)
-        await routerUtils(response, request, config.logger, traces).errorBoundary(async () => {
+        await routerUtils(response, request, config.logger, this.fullDebugConfig.traces).errorBoundary(async () => {
           const _result = middleware.onRequest(request, response)
 
           if (_result instanceof Promise) result = await _result
@@ -120,8 +122,8 @@ export default class RouterBuilder<T extends Record<any, any> = {}> extends Rout
   public schema<S extends TCreateRouteSchema>(schema: S): S extends null ? RouterRequestsWithSchema<T> : (S extends IBodyLessSchema ? RouterRequestsWithSchema<T> : RouterContentRequestsWithSchema<T>) {
     let router: RouterContentRequestsWithSchema<T> | RouterRequestsWithSchema<T>
 
-    if (schema && "body" in schema) router = new RouterContentRequestsWithSchema<T>(this._router, schema, this.buildDebugConfig)
-    else router = new RouterRequestsWithSchema<T>(this._router, schema as any, this.buildDebugConfig)
+    if (schema && "body" in schema) router = new RouterContentRequestsWithSchema<T>(this._router, schema, () => this.fullDebugConfig)
+    else router = new RouterRequestsWithSchema<T>(this._router, schema as any, () => this.fullDebugConfig)
 
     router.setupRouteRegisterCallback(this.registerRouteImpl)
     return router as any
@@ -140,7 +142,7 @@ export default class RouterBuilder<T extends Record<any, any> = {}> extends Rout
       logger
     }
 
-    if (this.buildDebugConfig()?.[1] && this.config.logger && this.debugLogTail.length > 0) {
+    if (this.fullDebugConfig.logs && this.config.logger && this.debugLogTail.length > 0) {
       this.debugLogTail.forEach(message => this.debugLog(message))
       this.debugLogTail = []
     }
@@ -166,7 +168,7 @@ export default class RouterBuilder<T extends Record<any, any> = {}> extends Rout
   }
 
   private debugLog(...message: string[]) {
-    if (!this.buildDebugConfig()?.[1] || !this.config?.logger) {
+    if (!this.fullDebugConfig.logs || !this.config?.logger) {
       if (this.debugLogTail.length >= 10) this.debugLogTail.slice(1)
       this.debugLogTail.push(message.join(" "))
       return
@@ -175,14 +177,21 @@ export default class RouterBuilder<T extends Record<any, any> = {}> extends Rout
     (this.config?.logger?.debug || this.config.logger?.info)?.(message.join(" "))
   }
 
-  private buildDebugConfig() {
-    const logging = typeof this.config?.debug === "object" ? this.config.debug.logs : this.config?.debug
+  private get fullDebugConfig(): IApplicationDebugConfigWithLogger {
+    if (!this.config?.debug || typeof this.config.debug === "boolean") return {
+      logger: this.config?.logger,
+      logs: !!this.config?.debug,
+      middleware: !!this.config?.debug,
+      routeExceptions: !!this.config?.debug,
+      traces: !!this.config?.debug
+    }
 
-    return this.config?.logger && logging ? [
-      this.config?.logger,
-      logging,
-      this.config.debug === true || (typeof this.config.debug === "object" && this.config.debug.traces)
-    ] as [TLogger, boolean, boolean] : undefined
-
+    return {
+      logger: this.config.logger,
+      logs: this.config.debug.logs,
+      traces: this.config.debug.traces ?? false,
+      routeExceptions: this.config.debug.routeExceptions ?? true,
+      middleware: this.config.debug.middleware ?? false
+    }
   }
 }
