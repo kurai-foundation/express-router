@@ -2,6 +2,7 @@ import { Request, Router } from "express"
 import FileResponse from "../responses/file-response"
 import Redirect from "../responses/redirect"
 import { IRegisteredRoute } from "../utils"
+import getModule from "../utils/get-module"
 import { IApplicationDebugConfigWithLogger } from "../utils/routing/router-builder"
 import { ISchema, routerUtils } from "../utils/routing/router-utils"
 import { RouteParameters } from "express-serve-static-core"
@@ -28,6 +29,8 @@ export interface RouteMetadata {
 }
 
 export type TRegisterRouteCallback = (path: string, method: RequestMethods, metadata: RouteMetadata | null, schema?: ISchema | null) => IRegisteredRoute
+
+const colorsModule = getModule("colors")
 
 /**
  * @internal
@@ -110,7 +113,13 @@ export class RouterRequestsCore<Attachments extends Record<any, any> = {}> {
 
           self.sendJSON(result)
         }, (message, code) => {
-          if (debug?.routeExceptions && resultCode >= 500) console.error(message)
+
+          if (debug?.routeExceptions && code >= 500) {
+            if (!colorsModule) console.error(`    ${ message }`)
+            else {
+              (debug.logger?.debug || debug.logger?.info)?.(`    ${ colorsModule.dim(message) }`)
+            }
+          }
 
           resultCode = code
         })
