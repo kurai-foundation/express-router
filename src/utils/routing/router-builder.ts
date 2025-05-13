@@ -45,9 +45,9 @@ export default class RouterBuilder<T extends Record<any, any> = {}> extends Rout
     this.tags = config?.tags
 
     if (config?.middleware) {
-      sendLog(this.fullDebugConfig, {
+      this.sendAwaitedDebugLog({
         levels: ["info"],
-        message: ["Setting up middleware: ", config.middleware.name],
+        message: ["Setting up middleware:", config.middleware.name],
         json: { milestone: "middleware", ok: true, name: config.middleware.name },
         module: "builder"
       })
@@ -60,7 +60,7 @@ export default class RouterBuilder<T extends Record<any, any> = {}> extends Rout
       router.use(async (request, response, next) => {
         if (!config.middleware) return next()
 
-        sendLog(this.fullDebugConfig, {
+        this.sendAwaitedDebugLog({
           levels: ["info"],
           message: ["Middleware call:", config.middleware.name, request.method.toUpperCase(), this.root + request.path],
           json: { name: config.middleware.name, method: request.method.toUpperCase(), path: this.root + request.path },
@@ -100,11 +100,12 @@ export default class RouterBuilder<T extends Record<any, any> = {}> extends Rout
    * @internal
    */
   protected registerRouteImpl(path: string, method: RequestMethods, metadata: RouteMetadata | null, schema?: ISchema | null) {
-    sendLog(this.fullDebugConfig, {
+    this.sendAwaitedDebugLog({
       levels: ["info"],
       message: ["Route registered", method.toUpperCase(), this.root + path],
       json: { milestone: "route", method: method.toUpperCase(), path: this.root + path },
-      module: "builder"
+      module: "builder",
+      condition: this.fullDebugConfig.registration
     })
 
     const routeRegistered = this.registeredRoutes
@@ -187,5 +188,15 @@ export default class RouterBuilder<T extends Record<any, any> = {}> extends Rout
 
   private get fullDebugConfig(): IApplicationDebugConfigWithLogger {
     return createFullDebugConfig(this.config?.debug, this.config?.logger)
+  }
+
+  private sendAwaitedDebugLog(log: ILogOptions) {
+    if (!this.fullDebugConfig.logs || !this.config?.logger) {
+      if (this.debugLogTail.length >= 10) this.debugLogTail.slice(1)
+      this.debugLogTail.push(log)
+      return
+    }
+
+    sendLog(this.fullDebugConfig, log)
   }
 }

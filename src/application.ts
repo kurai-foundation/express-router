@@ -9,7 +9,9 @@ import RouterBuilder from "./utils/routing/router-builder"
 import sendLog from "./utils/send-log"
 
 export interface IApplicationDebugConfig {
-  /** Set true to enable request and internal operations logging */
+  /**
+   * Set true to enable request and internal operations logging
+   */
   logs: boolean
 
   /**
@@ -18,6 +20,13 @@ export interface IApplicationDebugConfig {
    * @default false
    */
   traces?: boolean
+
+  /**
+   * Set false to disable routes and builders registration logs
+   *
+   * @default true
+   */
+  registration?: boolean
 
   /**
    * Set true to enable middleware call traces
@@ -353,7 +362,7 @@ export default class Application<T extends IApplicationConfig> {
 
       sendLog(fullDebugConfig, {
         levels: ["info"],
-        message: "Serving swagger JSON file at " + swaggerConfig.jsonFilePath,
+        message: ["Serving swagger JSON file at", swaggerConfig.jsonFilePath],
         json: { milestone: "swagger", type: "json", ok: true, path: swaggerConfig.jsonFilePath },
         module: "application",
       })
@@ -407,7 +416,7 @@ export default class Application<T extends IApplicationConfig> {
 
     sendLog(fullDebugConfig, {
       levels: ["info"],
-      message: "Serving swagger at " + swaggerConfig.path,
+      message: ["Serving swagger at", swaggerConfig.path],
       json: { milestone: "swagger", type: "ui", ok: true, path: swaggerConfig.path },
       module: "application",
     })
@@ -451,11 +460,13 @@ export default class Application<T extends IApplicationConfig> {
 
     const router = schema !== undefined ? builder.schema(schema) : builder
 
-    sendLog(createFullDebugConfig(this.config?.debug, this.config?.logger), {
+    const debugConfig = createFullDebugConfig(this.config?.debug, this.config?.logger)
+    sendLog(debugConfig, {
       levels: ["info"],
-      message: "Router builder created for route " + builder.root,
+      message: ["Router builder registered for route", builder.root],
       json: { milestone: "builder", root: builder.root },
-      module: "application"
+      module: "application",
+      condition: debugConfig.registration
     })
 
     return router as any
