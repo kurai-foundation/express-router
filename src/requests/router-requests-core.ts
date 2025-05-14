@@ -92,7 +92,7 @@ export class RouterRequestsCore<Attachments extends Record<any, any> = {}> {
         .schema(schema, code => resultCode = code)
         .errorBoundary(async self => {
           const result = await callback(req as any, c as any)
-          resultCode = result?.code ?? 200
+          resultCode = typeof result?.code === "number" ? result.code : 200
 
           if (result instanceof CustomResponse) {
             const isRaw = result.raw || (result.headers && result.headers.get("content-type") !== "application/json")
