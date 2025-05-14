@@ -210,7 +210,7 @@ export function routerUtils<Res extends Response, Req extends Request>(res: Res,
           await res.catch((err: any) => _err = err)
         }
 
-        throw _err
+        if (_err) throw _err
       }
       catch (error: any) {
         const message = (error?.name ?? "UnknownError") + ": " + (error?.message ?? "No details")
